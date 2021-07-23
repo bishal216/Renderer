@@ -5,14 +5,20 @@
 #include <iostream>
 #include <array>
 
+
 template <class T>
 struct vec4_T;
 template <class T>
 struct vec3_T;
 
 template <class T>
-struct vec2_T {
-    T x, y;
+struct vec2_T
+{
+    union {
+        struct { T x, y; };
+        T raw[2];
+    };
+    
 
     vec2_T() { x = y = 0; }
     vec2_T(T a) : x(a), y(a) {}
@@ -123,8 +129,8 @@ typedef vec2_T<int> vec2i;
 
 template <class T>
 struct vec3_T {
-    T x, y, z;
-
+        T x, y, z;
+   
     vec3_T() { x = y = z = 0; }
     vec3_T(T a) : x(a), y(a), z(a) {}
     vec3_T(T a, T b, T c) : x(a), y(b), z(c) {}
@@ -217,13 +223,13 @@ struct vec3_T {
 
     vec3_T<T> normalize() {
         T temp = sqrt(x * x + y * y + z * z);
-        *this = *this / temp;
+        *this = *this * 1 / temp;
         return *this;
     }
 
     static vec3_T<T> normalize(const vec3_T<T> &in) {
         T temp = sqrt(in.x * in.x + in.y * in.y + in.z * in.z);
-        return vec3_T<T>(in / temp);
+        return vec3_T<T>(in * 1/temp);
     }
 
     static double dist(const vec3_T<T> &a, const vec3_T<T> &b) {
@@ -235,7 +241,8 @@ struct vec3_T {
         ret.x = a.y * b.z - b.y * a.z;
         ret.y = b.x * a.z - a.x * b.z;
         ret.z = a.x * b.y - b.x * a.y;
-        return ret.normalize();
+        return ret;
+        //return ret.normalize();
     }
 
     static T dot(const vec3_T<T> &a, const vec3_T<T> &b) {
@@ -243,10 +250,14 @@ struct vec3_T {
     }
 };
 typedef vec3_T<float> vec3;
+typedef vec3_T<int> vec3i;
 
 template <class T>
 struct vec4_T {
-    T x, y, z, w;
+    union {
+        struct { T x, y, z, w; };
+        T raw[4];
+    };
 
     vec4_T() { x = y = z = w = 0; }
     vec4_T(T a) : x(a), y(a), z(a), w(a) {}
@@ -654,71 +665,3 @@ typedef mat<float, 4, 4> mat4f;
 typedef mat<float, 3, 3> mat3f;
 typedef mat<float, 4, 4> mat4;
 typedef mat<float, 3, 3> mat3;
-
-// template <class Type, size_t dim>
-// struct vec : public mat<Type, 1, dim> {
-//     vec() {}
-//     vec(const Type &a) {
-//         for (size_t i = 0; i < dim; i++)
-//             operator[](i) = a;
-//     }
-//     Type &operator[](const size_t &i) {
-//         return mat<Type, 1, dim>::operator()(i, 0);
-//     }
-//     const Type &operator[](const size_t &i) {
-//         return mat<Type, 1, dim>::operator()(i, 0);
-//     }
-//     double getmag() {
-//         double ret = 0;
-//         for (size_t i = 0; i < dim; i++)
-//             ret += mat<Type, 1, dim>::operator()(i, 0);
-//         return sqrtf(ret);
-//     }
-//     vec<Type, dim> normalize() {
-//         auto temp = getmag();
-//         *this /= temp;
-//         return *this;
-//     }
-//
-//     template <class Type1, size_t dim1>
-//     static vec<Type1, dim1> normalize(const vec<Type1, dim1> &in) {
-//         auto temp = in.getmag();
-//         return vec<Type1, dim1>(in / temp);
-//     }
-//
-//     template <class Type1, size_t dim1>
-//     static double dist(const vec<Type1, dim1> &a, const vec<Type1, dim1> &b) {
-//         double temp;
-//         for (size_t i = 0; i < dim1; i++)
-//             temp += (b[i] - a[i]) * (b[i] - a[i]);
-//         return sqrt(temp);
-//     }
-//
-//     template <class Type1, size_t dim1>
-//     static Type1 dot(const vec<Type1, dim1> &a, const vec<Type1, dim1> &b) {
-//         double temp;
-//         for (size_t i = 0; i < dim1; i++)
-//             temp += b[i] * a[i];
-//         return temp;
-//     }
-// };
-//
-// typedef vec<float, 4> vec4;
-// typedef vec<float, 3> vec3;
-// typedef vec<float, 2> vec2;
-//
-// template <class Type>
-// vec<Type, 3> cross3(const vec<Type, 3> &a, const vec<Type, 3> &b) {
-//     vec<Type, 3> ret;
-//     ret[0] = a[1] * b[2] - b[1] * a[2];
-//     ret[1] = b[0] * a[2] - a[0] * b[2];
-//     ret[2] = a[0] * b[1] - b[0] * a[1];
-//     return ret.normalize();
-// }
-//
-// template <class Type>
-// vec<Type, 3> cross2(const vec<Type, 2> &a, const vec<Type, 2> &b) {
-//     vec<Type, 3> ret(0);
-//     ret[2] = a[0] * b[1] - b[0] * a[1];
-//     return ret.normalize();
-// }

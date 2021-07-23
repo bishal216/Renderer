@@ -4,14 +4,13 @@
 
 int main(int argc, char** argv)
 {
-	initcanvas(argc, argv);
-
-	update(0);
-	glutMainLoop();
+    initcanvas(argc, argv);
+    update(0);
+    glutMainLoop();
 
 }
 
-void initcanvas(int argc, char** argv) 
+void initcanvas(int argc, char** argv)
 {
     //Initialize GLUT
     glutInit(&argc, argv);
@@ -25,10 +24,12 @@ void initcanvas(int argc, char** argv)
     // Do drawing here
     grid = new bool[WIDTH * HEIGHT];
     color = new vec3[WIDTH * HEIGHT];
-    for (GLint x = 0; x < WIDTH * HEIGHT; x++) 
+    zBuffer = new float[WIDTH * HEIGHT];
+    for (GLint x = 0; x < WIDTH * HEIGHT; x++)
     {
         grid[x] = false;
         color[x] = 0;
+        zBuffer[x] = std::numeric_limits<float>::min();
     }
 }
 void reshape(int w, int h) {
@@ -39,24 +40,28 @@ void reshape(int w, int h) {
 
     bool* newGrid = new bool[width * height];
     vec3* newcolor = new vec3[width * height];
-
+    float* newzBuffer = new float[width * height];
     for (GLint x = 0; x < width; ++x) {
         for (GLint y = 0; y < height; ++y) {
             if (x < oldWidth && x >= 0 && y < oldHeight && y >= 0) {
                 newGrid[x + y * width] = grid[x + y * oldWidth];
                 newcolor[x + y * width] = color[x + y * oldWidth];
+                newzBuffer[x + y * width] = zBuffer[x + y * oldWidth];
             }
             else {
                 newGrid[x + y * width] = false;
                 newcolor[x + y * width] = 0;
+                newzBuffer[x + y * width] = std::numeric_limits<float>::min();
             }
         }
     }
 
     delete[] grid;
     delete[] color;
+    delete[] zBuffer;
     grid = newGrid;
     color = newcolor;
+    zBuffer = newzBuffer;
 
     glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
@@ -69,25 +74,28 @@ void reshape(int w, int h) {
 void update(int value) {
 
     cleargrid();
-    
-    for (int i = 0; i < object->nfaces(); i++) 
+    for (int i = 0; i < object->nfaces(); i++)
     {
         std::vector<int> face = object->face(i);
-        vec2i screen_coords[3];
-        vec3 world_coords[3];
-        for (int j = 0; j < 3; j++) {
+        vec3 points[3], world[3]; //Screen and World co-ords
+        //vec2i screen[3];
+        for (int j = 0; j < 3; j++)
+        {
             vec3 v = object->vert(face[j]);
-            screen_coords[j] = vec2i((v.x ) * width / 2., (v.y) * height / 2.);
-            world_coords[j] = v;
+            points[j] = world2screen(v);
+            world[j] = v;
         }
-        vec3 n = vec3::cross( (world_coords[2] - world_coords[0]) , (world_coords[1] - world_coords[0]));
+        vec3 n = vec3::cross((world[2] - world[0]), (world[1] - world[0]));
+        //vec3 n = vec3::cross((points[2] - points[0]), (points[1] - points[0]));
         n.normalize();
         float intensity = n * light_dir;
-        if(intensity>0)
-            Triangle(screen_coords[0], screen_coords[1], screen_coords[2], { intensity,intensity,intensity }, false);
+        //intensity = 0.92;
+        if (intensity > 0)
+        {
+            triangle(points, zBuffer, { intensity, intensity,intensity });
+            Triangle({ (int)points[0].x, (int)points[0].y }, { (int)points[1].x, (int)points[1].y }, { (int)points[2].x, (int)points[2].y }, { intensity,intensity,intensity }, true);
+        }
     }
-    
-    //Triangle({ 0,0 }, { 100,100 }, { 300,-150 }, { 0.50,0.75,0 }, false);
     glutPostRedisplay();
     glutTimerFunc(1000 / FPS, update, 0);
 }
@@ -119,18 +127,27 @@ void cleargrid() {
     for (GLint x = 0; x < width * height; ++x) {
         grid[x] = false;
         color[x] = 0;
+        zBuffer[x] = std::numeric_limits<float>::min();
     }
 }
 
-void putpixel(int x, int y, const vec3& col) {
+void putpixel(int x, int y,float zBuf, const vec3& col) {
+    
+    width = (int)width;
     if (x < width && x >= 0 && y < height && y >= 0) {
-        color[x + y * width] = col;
-        grid[x + y * width] = true;
+       if (zBuffer[x + y * width] <= zBuf)
+        {
+           color[x + y * width] = col;
+           grid[x + y * width] = true;
+           zBuffer[x + y * width] = zBuf;
+        }
+        
     }
 }
 
-void putpixel_adjusted(int x, int y, const vec3_T<float>& col) {
-    putpixel(x + width / 2, y + height / 2, col);
+void putpixel_adjusted(int x, int y,float zBuf, const vec3_T<float>& col) {
+    //putpixel(x + width / 2, y + height / 2,zBuf, col);
+    putpixel(x, y,zBuf, col);
 }
 
 void LineBresenham_adjusted(int x1, int y1, int x2, int y2, const vec3_T<float>& color)
@@ -139,12 +156,12 @@ void LineBresenham_adjusted(int x1, int y1, int x2, int y2, const vec3_T<float>&
     int steps, k;
     dx = abs(x2 - x1);
     dy = abs(y2 - y1);
-        //Sets increment/decrement : stepsize
+    //Sets increment/decrement : stepsize
     int lx, ly;
 
     if (x2 > x1) { lx = 1; }
     else { lx = -1; }
-    
+
     if (y2 > y1) { ly = 1; }
     else { ly = -1; }
     //initialize
@@ -153,7 +170,7 @@ void LineBresenham_adjusted(int x1, int y1, int x2, int y2, const vec3_T<float>&
     if (dx > dy) {
         int p = 2 * dy - dx;
         for (int k = 0; k <= dx; k++) {
-            putpixel_adjusted(x, y, color);
+            putpixel_adjusted(x, y,1, color);
             if (p < 0) {
                 x += lx;
                 p += 2 * dy;
@@ -169,7 +186,7 @@ void LineBresenham_adjusted(int x1, int y1, int x2, int y2, const vec3_T<float>&
     else {
         int p = 2 * dx - dy;
         for (int k = 0; k <= dy; k++) {
-            putpixel_adjusted(x, y, color);
+            putpixel_adjusted(x, y,1, color);
             if (p < 0) {
                 y += ly;
                 p += 2 * dx;
@@ -181,7 +198,7 @@ void LineBresenham_adjusted(int x1, int y1, int x2, int y2, const vec3_T<float>&
             }
         }
     }
-    putpixel_adjusted(x, y, color);
+    putpixel_adjusted(x, y,0, color);
 }
 
 
@@ -213,14 +230,14 @@ void rasterize(vec2i V1, vec2i V2, vec2i V3, const vec3_T<float>& color)
         float alpha = (float)(y - V1.y) / height;// be careful with divisions by zero 
         if (partialHeight != 0)
         {
-            float beta = (float)(y - V1.y) / partialHeight; 
+            float beta = (float)(y - V1.y) / partialHeight;
             int Ax = (V1.x + (V3.x - V1.x) * alpha), Ay = V1.y + (V3.y - V1.y) * alpha;
             int Bx = V1.x + (V2.x - V1.x) * beta, By = V1.y + (V2.y - V1.y) * beta;
             if (Ax > Bx) { swap(Ax, Bx); }
             for (int j = Ax; j <= Bx; j++)
-                putpixel_adjusted(j, y, color);
+                putpixel_adjusted(j, y,0, color);
         }
-        
+
     }
 
     for (int y = V2.y; y <= V3.y; y++)
@@ -236,8 +253,73 @@ void rasterize(vec2i V1, vec2i V2, vec2i V3, const vec3_T<float>& color)
             int Bx = V2.x + (V3.x - V2.x) * beta, By = V2.y + (V3.y - V2.y) * beta;
             if (Ax > Bx) { swap(Ax, Bx); }
             for (int j = Ax; j <= Bx; j++)
-                putpixel_adjusted(j, y, color);
+                putpixel_adjusted(j, y,0, color);
         }
-        
+
     }
 }
+
+vec3 world2screen(vec3 v) {
+
+    float tempx = (float)((int)(((v.x + 1)* width / 2. + .5)* scale));
+    float tempy = (float)((int)(((v.y + 1)* height / 2. + .5)* scale));
+    float tempz = (float)((v.z * scale));
+    
+    //perspective;
+    /*
+    float r = -1 / camera.z;
+    tempx = (float)((int)(tempx / (1 + r * tempz) + 0.5 ));
+    tempy = (float)((int)(tempy / (1 + r * tempz) + 0.5 ));
+    tempz = tempz / (1 + r * tempz);
+    */
+    vec3 temp = { tempx,tempy,tempz };
+    return temp;
+}
+
+//-------------------------------------EXPERIMENTAL---------------------------------//
+
+/*
+This deals with cross products and centre of masses. I don't exactly know the physics behind it but its better than our original resterizer.
+AFAIK, barycentric deals with its own Barycentric co-ordinates. 
+The vertices of triangle form a simplex and their masses are positive iff 
+*/
+vec3 barycentric(vec3 A, vec3 B, vec3 C, vec3 P) {
+    vec3 s[2];
+        s[0] = { C.x - A.x , B.x - A.x , A.x - P.x };
+        s[1] = { C.y - A.y , B.y - A.y , A.y - P.y };
+    vec3 u = vec3::cross(s[0], s[1]);
+    if (std::abs(u.z) > 0/*1e-2*/) // dont forget that u.z is integer. If it is zero then triangle ABC is degenerate
+        return vec3(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
+    return vec3(-1, 1, 1); // in this case generate negative coordinates, it will be thrown away by the rasterizator
+}
+
+void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color) 
+{
+   
+    vec2 bboxmin(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+    vec2 bboxmax(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
+    
+    for (int i = 0; i < 3; i++) {
+
+        //kinda redundant but cannot loop this
+            bboxmin.x =  std::min(bboxmin.x, pts[i].x);
+            bboxmax.x = std::max(bboxmax.x, pts[i].x);
+
+            bboxmin.y = std::min(bboxmin.y, pts[i].y);
+            bboxmax.y = std::max(bboxmax.y, pts[i].y);
+    }
+    vec3 P; 
+    for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++) 
+    {
+        for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++) 
+        {
+            vec3 bc_screen = barycentric(pts[0], pts[1], pts[2], P);
+            if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
+            
+            P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z+1;
+            putpixel_adjusted(P.x, P.y,P.z, color);
+            
+        }
+    }
+}
+

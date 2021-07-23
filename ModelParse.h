@@ -7,13 +7,15 @@
 class ModelParse 
 {
 private:
-	std::vector<vec3> vertices;
-	std::vector<std::vector<int>> faces;
+	std::vector<vec3> vertices;				//vertex array
+	std::vector<std::vector<int>> faces;	//face array
+	std::vector<vec2> textures;	//texture co-ordinates array
 public:
 	ModelParse(std::string filename);
 	~ModelParse();
-	int nverts();
-	int nfaces();
+	int nverts();	//returns number of vertices
+	int nfaces();	//returns number of faces
+	int ntextures();	//returns number of texture vertices
 	vec3 vert(int i);
 	std::vector<int> face(int idx);
 };

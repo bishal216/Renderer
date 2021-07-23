@@ -2,7 +2,7 @@
 #include<fstream>
 #include<sstream>
 #include<string>
-ModelParse::ModelParse(std::string filename) : vertices(), faces() 
+ModelParse::ModelParse(std::string filename) : vertices(), faces()
 {
     std::cout << "Filename : " << filename;
     //Reads in file
@@ -16,27 +16,27 @@ ModelParse::ModelParse(std::string filename) : vertices(), faces()
     }
     std::string line;
 
-    while (!in.eof()) 
+    while (!in.eof())
     {
         //get one line at a time
         std::getline(in, line);
         //string object
         std::istringstream iss(line.c_str());
-        
+
         char trash;
-        if (!line.compare(0, 2, "v ")) 
+        if (!line.compare(0, 2, "v "))  //starts with v<space>
         {
             iss >> trash; // first character is v
             vec3 v;
-                // followed by xyz co-ords
+            // followed by xyz co-ords
             iss >> v.x;
             iss >> v.y;
             iss >> v.z;
             vertices.push_back(v);
         }
-        else if (!line.compare(0, 2, "f ")) 
+        else if (!line.compare(0, 2, "f ")) //starts with f<space>
         {
-            std::vector<int> f; 
+            std::vector<int> f;
             int itrash, idx;
             iss >> trash; //first charecter is f
             while (iss >> idx >> trash >> itrash >> trash >> itrash)  // in the form vert/vertTex/norm (vert is read, the rest are treated as trash)
@@ -46,7 +46,16 @@ ModelParse::ModelParse(std::string filename) : vertices(), faces()
             }
             faces.push_back(f);
         }
+        else if (!line.compare(0, 3, "vt "))    //starts with vt<space>
+        {
+            iss >> trash >> trash;//Ignore vt
+            vec2 uv;
+            iss >> uv.x;
+            iss >> uv.y;
+            textures.push_back(uv);
+        }
     }
+    std::cout << nverts() << "," << nfaces() << "," << ntextures();
 }
 
 int ModelParse::nverts()
@@ -57,6 +66,11 @@ int ModelParse::nverts()
 int ModelParse::nfaces()
 {
     return (int)faces.size();
+}
+
+int ModelParse::ntextures()
+{
+    return(int)textures.size();
 }
 
 vec3 ModelParse::vert(int i)
