@@ -76,25 +76,27 @@ void update(int value) {
     cleargrid();
     for (int i = 0; i < object->nfaces(); i++)
     {
-        std::vector<int> face = object->face(i);
+        std::vector<vec3i> face = object->face(i);
         vec3 points[3], world[3]; //Screen and World co-ords
+        float intensity[3];         //intensity values for Gouraud shading
         //vec2i screen[3];
         for (int j = 0; j < 3; j++)
         {
-            vec3 v = object->vert(face[j]);
+            vec3 v = object->vert(face[j].x);
             points[j] = world2screen(v);
             world[j] = v;
+            intensity[j] = object->norm(i,j)*light_dir;
         }
-        vec3 n = vec3::cross((world[2] - world[0]), (world[1] - world[0]));
+        //vec3 n = vec3::cross((world[2] - world[0]), (world[1] - world[0]));
         //vec3 n = vec3::cross((points[2] - points[0]), (points[1] - points[0]));
-        n.normalize();
-        float intensity = n * light_dir;
+        //n.normalize();
+        //float intensity = n * light_dir;
         //intensity = 0.92;
-        if (intensity > 0)
-        {
-            triangle(points, zBuffer, { intensity, intensity,intensity });
-            Triangle({ (int)points[0].x, (int)points[0].y }, { (int)points[1].x, (int)points[1].y }, { (int)points[2].x, (int)points[2].y }, { intensity,intensity,intensity }, true);
-        }
+        //if (intensity > 0)
+        //{
+            triangle(points, zBuffer,WHITE, intensity);
+            //Triangle({ (int)points[0].x, (int)points[0].y }, { (int)points[1].x, (int)points[1].y }, { (int)points[2].x, (int)points[2].y }, { intensity,intensity,intensity }, true);
+        //}
     }
     glutPostRedisplay();
     glutTimerFunc(1000 / FPS, update, 0);
@@ -293,7 +295,7 @@ vec3 barycentric(vec3 A, vec3 B, vec3 C, vec3 P) {
     return vec3(-1, 1, 1); // in this case generate negative coordinates, it will be thrown away by the rasterizator
 }
 
-void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color) 
+void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color, float* intensity)
 {
    
     vec2 bboxmin(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
@@ -309,15 +311,18 @@ void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color)
             bboxmax.y = std::max(bboxmax.y, pts[i].y);
     }
     vec3 P; 
+    vec3 clr;
     for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++) 
     {
         for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++) 
         {
             vec3 bc_screen = barycentric(pts[0], pts[1], pts[2], P);
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
-            
+            clr = color * (bc_screen.x)*intensity[0] + color * (bc_screen.y)*intensity[1] + color*(bc_screen.z)*intensity[2];
+            //std::cout << clr << std::endl;
+           // clr /= 3;
             P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z+1;
-            putpixel_adjusted(P.x, P.y,P.z, color);
+            putpixel_adjusted(P.x, P.y,P.z, clr);
             
         }
     }

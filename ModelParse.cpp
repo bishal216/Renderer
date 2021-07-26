@@ -36,13 +36,16 @@ ModelParse::ModelParse(std::string filename) : vertices(), faces()
         }
         else if (!line.compare(0, 2, "f ")) //starts with f<space>
         {
-            std::vector<int> f;
-            int itrash, idx;
+            std::vector<vec3i> f;
+            vec3i temp;
             iss >> trash; //first charecter is f
-            while (iss >> idx >> trash >> itrash >> trash >> itrash)  // in the form vert/vertTex/norm (vert is read, the rest are treated as trash)
+            while (iss >> temp.x >> trash >> temp.y >> trash >> temp.z)  // in the form vert/vertTex/norm (vert is read, the rest are treated as trash)
             {
-                idx--; // in wavefront obj all indices start at 1, not zero
-                f.push_back(idx);
+                //in wavefront obj all indices start at 1, not zero
+                temp.x--;   //vert
+                temp.y--;   //texture
+                temp.z--; // normal 
+                f.push_back(temp);
             }
             faces.push_back(f);
         }
@@ -54,8 +57,23 @@ ModelParse::ModelParse(std::string filename) : vertices(), faces()
             iss >> uv.y;
             textures.push_back(uv);
         }
+
+        else if (!line.compare(0, 3, "vn "))    //starts with vn<space>
+        {
+            iss >> trash >> trash;//Ignore vn
+            vec3 n;
+            iss >> n.x;
+            iss >> n.y;
+            iss >> n.z;
+            normal.push_back(n);
+        }
+       
     }
-    std::cout << nverts() << "," << nfaces() << "," << ntextures();
+    std::cout << nnormal();
+}
+
+ModelParse::~ModelParse()
+{
 }
 
 int ModelParse::nverts()
@@ -73,12 +91,23 @@ int ModelParse::ntextures()
     return(int)textures.size();
 }
 
-vec3 ModelParse::vert(int i)
+int ModelParse::nnormal()
 {
-    return vertices[i];
+    return(int)normal.size();
 }
 
-std::vector<int> ModelParse::face(int idx)
+vec3 ModelParse::vert(int i)
 {
-    return faces[idx];
+    return vertices.at(i);
+}
+
+std::vector<vec3i> ModelParse::face(int idx)
+{
+    return faces.at(idx);
+}
+
+vec3 ModelParse::norm(int idx, int i)
+{
+    int temp = faces.at(idx).at(i).z;   //z is normal
+    return normal.at(temp).normalize();
 }

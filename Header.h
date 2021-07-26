@@ -37,14 +37,14 @@ ModelParse* object = new ModelParse("Object/Head.obj");
 int width = WIDTH;
 int height = HEIGHT;
 vec3 camera = { 0,0,3 };
-vec3 light_dir = { 0,0,-1};
-
+vec3 light_dir = { 1,-1,1};
+const vec3_T<float>& WHITE = { 1,1,1 };
 float scale =1.0;
 //structs
 struct clr { float R; float G; float B; float A; };
 
 
 //------------------EXPERIMENTAL------------------------
-void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color);
+void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color, float* intensity);
 
 #endif
