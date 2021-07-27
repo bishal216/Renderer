@@ -1,7 +1,8 @@
 ﻿#include"Header.h"
 #include"GenericFunctions.h"
+#include<chrono>
 
-
+float angleX = 0, angleY = 0, angleZ = 0;
 int main(int argc, char** argv)
 {
     initcanvas(argc, argv);
@@ -71,9 +72,23 @@ void reshape(int w, int h) {
     glLoadIdentity();
     glutPostRedisplay();
 }
+
+auto lastframe = std::chrono::high_resolution_clock::now();
+float deltatime;
+    
+
 void update(int value) {
+    deltatime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - lastframe).count();
+    lastframe = std::chrono::high_resolution_clock::now();
+    //std::cout << 1e6 / deltatime<<std::endl;
+    glutSetWindowTitle(std::to_string(1e6 / deltatime).c_str());
+    //const vec3_T<float>& clr = { (float)(rand() % 255) / 255 ,(float)(rand() % 255) / 255 ,(float)(rand() % 255) / 255 };
+  
+    spin(0,0,1);
+
 
     cleargrid();
+    
     for (int i = 0; i < object->nfaces(); i++)
     {
         std::vector<vec3i> face = object->face(i);
@@ -83,9 +98,14 @@ void update(int value) {
         for (int j = 0; j < 3; j++)
         {
             vec3 v = object->vert(face[j].x);
+            v = rotation3D(v, angleX, angleY, angleZ);
+            //std::cout << v;
             points[j] = world2screen(v);
             world[j] = v;
-            intensity[j] = object->norm(i,j)*light_dir;
+            intensity[j] = rotation3D(object->norm(i, j), angleX, angleY, angleZ) *light_dir;
+            if (intensity[j] < 0)
+                intensity[j] = 0;
+            intensity[j] += 0.2;
         }
         //vec3 n = vec3::cross((world[2] - world[0]), (world[1] - world[0]));
         //vec3 n = vec3::cross((points[2] - points[0]), (points[1] - points[0]));
@@ -94,8 +114,8 @@ void update(int value) {
         //intensity = 0.92;
         //if (intensity > 0)
         //{
-            triangle(points, zBuffer,WHITE, intensity);
-            //Triangle({ (int)points[0].x, (int)points[0].y }, { (int)points[1].x, (int)points[1].y }, { (int)points[2].x, (int)points[2].y }, { intensity,intensity,intensity }, true);
+            triangle(points, zBuffer,GREEN, intensity);
+            //Triangle({ (int)points[0].x, (int)points[0].y }, { (int)points[1].x, (int)points[1].y }, { (int)points[2].x, (int)points[2].y },RED, true);
         //}
     }
     glutPostRedisplay();
@@ -149,7 +169,8 @@ void putpixel(int x, int y,float zBuf, const vec3& col) {
 
 void putpixel_adjusted(int x, int y,float zBuf, const vec3_T<float>& col) {
     //putpixel(x + width / 2, y + height / 2,zBuf, col);
-    putpixel(x, y,zBuf, col);
+     putpixel(x + width / 2, y, zBuf, col);
+    //putpixel(x, y,zBuf, col);
 }
 
 void LineBresenham_adjusted(int x1, int y1, int x2, int y2, const vec3_T<float>& color)
@@ -172,7 +193,7 @@ void LineBresenham_adjusted(int x1, int y1, int x2, int y2, const vec3_T<float>&
     if (dx > dy) {
         int p = 2 * dy - dx;
         for (int k = 0; k <= dx; k++) {
-            putpixel_adjusted(x, y,1, color);
+            putpixel_adjusted(x, y,INT_MAX, color);
             if (p < 0) {
                 x += lx;
                 p += 2 * dy;
@@ -200,7 +221,7 @@ void LineBresenham_adjusted(int x1, int y1, int x2, int y2, const vec3_T<float>&
             }
         }
     }
-    putpixel_adjusted(x, y,0, color);
+    putpixel_adjusted(x, y,INT_MAX, color);
 }
 
 
@@ -263,19 +284,30 @@ void rasterize(vec2i V1, vec2i V2, vec2i V3, const vec3_T<float>& color)
 
 vec3 world2screen(vec3 v) {
 
+    /*
+    mat4 ModelView = lookat(eye, center, vec3(0, 1, 0));
+    mat4 Projection;
+    mat4 ViewPort = viewport(width*0.1,height*0.1, width * 0.8, height * 0.8);
+    Projection(3, 2) = -1.0f / ((eye - center).normalize()).z;
+
+    return (ViewPort * Projection * ModelView * (v));
+    */
+    
     float tempx = (float)((int)(((v.x + 1)* width / 2. + .5)* scale));
     float tempy = (float)((int)(((v.y + 1)* height / 2. + .5)* scale));
     float tempz = (float)((v.z * scale));
     
     //perspective;
-    /*
-    float r = -1 / camera.z;
+    float r = -1 / eye.z;
     tempx = (float)((int)(tempx / (1 + r * tempz) + 0.5 ));
     tempy = (float)((int)(tempy / (1 + r * tempz) + 0.5 ));
     tempz = tempz / (1 + r * tempz);
-    */
+    
+    lookat(BLUE, GREEN, RED);
+    
     vec3 temp = { tempx,tempy,tempz };
     return temp;
+    
 }
 
 //-------------------------------------EXPERIMENTAL---------------------------------//
@@ -328,3 +360,96 @@ void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color, float* inte
     }
 }
 
+//-----------------------------CAMERA------------------------------------
+mat4 lookat(vec3 eye, vec3 center, vec3 up) //ModelView
+{
+    //eye   :   position of the eye
+    //center:   origin of the new axes
+    //up    :   vertical vector in final render
+    
+    //the z-axis is the vector c-e (centre and eye)
+    vec3 z = (eye - center).normalize();
+    //the x-axis is given by cross product between z and up
+    vec3 x = vec3::cross(up, z).normalize();
+    //the y-axis is given by cross product between z and x
+    vec3 y = vec3::cross(x, z).normalize(); //up vector is not necessarily the new y axis . But why??
+
+    mat4 temp;
+   //translate 
+    temp(0,3) = -center.x;
+    temp(1,3) = -center.y;
+    temp(2,3) = -center.z;
+
+   //inverse
+    temp(0, 0) = x.x;
+    temp(1, 0) = y.x;
+    temp(2, 0) = z.x;
+
+    temp(0, 1) = x.y;
+    temp(1, 1) = y.y;
+    temp(2, 1) = z.y;
+
+    temp(0, 2) = x.z;
+    temp(1, 2) = y.z;
+    temp(2, 2) = z.z;
+
+    return temp;
+}
+mat4 viewport(int x, int y, int w, int h) {
+    // Maps [-1,1]*[-1,1]*[-1,1]  onto the screen cube [x,x+w]*[y,y+h]*[0,d]
+    mat4 m;
+    m(0,3) = x + w / 2.f;
+    m(1,3) = y + h / 2.f;
+    m(2,3) = depth / 2.f;
+
+    m(0,0) = w / 2.f;
+    m(1,1) = h / 2.f;
+    m(2,2) = depth / 2.f;
+    return m;
+}
+
+
+
+vec3 rotation3D(vec3 Old,float angleX, float angleY, float angleZ)
+{
+        vec3 New = Old;
+
+        //Y-rotation
+        if (angleY != 0)
+        {
+            New.x = (1.0f * Old.z * sin(angleY) + 1.0f * Old.x * cos(angleY));
+            New.y = Old.y;
+            New.z = (1.0f * Old.z * cos(angleY) - 1.0f * Old.x * sin(angleY));
+            Old = New;
+        }
+
+        //X-rotation
+        if ((angleX) != 0)
+        {
+            New.x = Old.x;
+            New.y = (1.0f * Old.y * cos(angleX) - 1.0f * Old.z * sin(angleX));
+            New.z = (1.0f * Old.y * sin(angleX) + 1.0f * Old.z * cos(angleX));
+            Old = New;
+        }
+
+
+
+        //Zrotation
+        if (angleZ != 0)
+        {
+            New.x = (-1.0f * Old.y * sin(angleZ) + 1.0f * Old.x * cos(angleZ));
+            New.y = (1.0f * Old.y * cos(angleZ) + 1.0f * Old.x * sin(angleZ));
+            New.z = Old.z;
+        }
+        return New;
+}
+
+void spin(bool X, bool Y, bool Z)
+{
+    if (X == true)
+        angleX+= 0.05;
+    if (Y == true)
+        angleY += 0.05;
+    if (Z == true)
+        angleZ += 0.05;
+}

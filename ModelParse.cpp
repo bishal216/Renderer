@@ -2,8 +2,12 @@
 #include<fstream>
 #include<sstream>
 #include<string>
+#include<strstream>
+
+
 ModelParse::ModelParse(std::string filename) : vertices(), faces()
 {
+    
     std::cout << "Filename : " << filename;
     //Reads in file
     std::ifstream in;
@@ -69,7 +73,9 @@ ModelParse::ModelParse(std::string filename) : vertices(), faces()
         }
        
     }
-    std::cout << nnormal();
+    std::cout << nfaces();
+    
+    
 }
 
 ModelParse::~ModelParse()

@@ -248,6 +248,8 @@ struct vec3_T {
     static T dot(const vec3_T<T> &a, const vec3_T<T> &b) {
         return a.x * b.x + a.y * b.y + a.z * b.z;
     }
+
+    
 };
 typedef vec3_T<float> vec3;
 typedef vec3_T<int> vec3i;
@@ -659,7 +661,9 @@ class mat {
     }
 
     vec2_T<size_t> dimensions() { return vec2_T<size_t>(xdim, ydim); }
-};
+  
+
+    };
 
 typedef mat<float, 4, 4> mat4f;
 typedef mat<float, 3, 3> mat3f;
