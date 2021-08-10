@@ -3,12 +3,9 @@
 #define initialization
 //#include<iostream>
 #include<GL/glut.h>
-#include<math.h>
-#include"Transformations.h"
 //#include"maths.h"
 #include"ModelParse.h"
-#include"GenericFunctions.h"
-#include<chrono>
+#include"Transformations.h"
 #define WIDTH 800
 #define HEIGHT 800
 #define FPS 60
@@ -18,34 +15,44 @@ void reshape(int w, int h);					//Resizing of window
 void update(int);							//update
 void display();								//display
 void cleargrid();							//Clears grid
-
+void myKeyboardFunc(unsigned char key, int x, int y);	//Keyboard 
 //putpixel
-void putpixel(int x, int y,float zBuf, const vec3& col = 1);
+void putpixel(int x, int y, float zBuf, const vec3& col = 1);
 
 //Our functions
-//---------------Projection----------------------------
-vec3 reverseNormalization(vec3 point);
-vec3 project(vec3 point);
-//------------------Raster------------------------
-void triangle(vec3* pts,  const vec3_T<float>& color, vec3* L, vec3* N, vec3* V, vec3* R,float* intensity,bool mode);//Normal interpolation
+void LineBresenham_adjusted(int x1, int y1, int x2, int y2, const vec3_T<float>& color);
+void Triangle(vec2i t0, vec2i t1, vec2i t2, const vec3_T<float>& color, bool wireframe = true);
+void rasterize(vec2i t0, vec2i t1, vec2i t2, const vec3_T<float>& color);
 
-
+//For Camera
+vec3 world2screen(vec3 v);
+vec3 transform(vec3 pts);
 //variables
 bool* grid;
 vec3* color;
 float* zBuffer;
 //ModelParse* object = new ModelParse("Object/TestCube.obj");
 //ModelParse* object = new ModelParse("Object/Head.obj");
-//ModelParse* object = new ModelParse("Object/Stupa3.obj");
-ModelParse* object = new ModelParse("Object/untitled.obj");
-int width = 800;
-int height = 800;
-int zMax = 800;
-vec3 light_dir = vec3(-1000,0,0);
-vec3 prp = vec3( 0,0,2500);
+ModelParse* object = new ModelParse("Object/Stupa3.obj");
+int width = WIDTH;
+int height = HEIGHT;
+int depth = 500;
 
-//Phong
-float ka = 0.2, kd = 0.4 ,ks = 1;
-float Ia = 1, Il = 1;
-float alpha = 200;
+
+//vec3 camera = { 0,0,3 };
+vec3 light_dir = vec3(0, 1, 1).normalize();;
+vec3 eye = { 0,0,3 };
+vec3 translate = vec3(0, 0, 0), rotate = vec3(0, 0, 0), scale = vec3(1, 1, 1);
+
+//colors
+const vec3_T<float>& WHITE = { 1,1,1 };
+const vec3_T<float>& RED = { 1,0,0 };
+const vec3_T<float>& BLUE = { 0,1,0 };
+const vec3_T<float>& GREEN = { 0,0,1 };
+//structs
+struct clr { float R; float G; float B; float A; };
+
+
+//------------------EXPERIMENTAL------------------------
+void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color, float* intensity);
 #endif
