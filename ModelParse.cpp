@@ -8,7 +8,7 @@
 ModelParse::ModelParse(std::string filename) : vertices(), faces()
 {
     
-    std::cout << "Filename : " << filename;
+    //std::cout << "Filename : " << filename;
     //Reads in file
     std::ifstream in;
     in.open(filename, std::ifstream::in);
@@ -36,6 +36,9 @@ ModelParse::ModelParse(std::string filename) : vertices(), faces()
             iss >> v.x;
             iss >> v.y;
             iss >> v.z;
+            checkMaxMin('x',v.x);
+            checkMaxMin('y',v.y);
+            checkMaxMin('z',v.z);
             vertices.push_back(v);
         }
         else if (!line.compare(0, 2, "f ")) //starts with f<space>
@@ -73,8 +76,8 @@ ModelParse::ModelParse(std::string filename) : vertices(), faces()
         }
        
     }
-    std::cout << nfaces();
-    
+    std::cout << nverts()<<std::endl;
+    manageFaces(0.8);
     
 }
 
@@ -116,4 +119,57 @@ vec3 ModelParse::norm(int idx, int i)
 {
     int temp = faces.at(idx).at(i).z;   //z is normal
     return normal.at(temp).normalize();
+}
+
+std::vector<vec3> ModelParse::returnVertices()
+{
+    return vertices;
+}
+
+std::vector<std::vector<vec3i>> ModelParse::returnFaces()
+{
+    return faces;
+}
+
+std::vector<vec3> ModelParse::returnNormals()
+{
+    return normal;
+}
+
+void ModelParse::checkMaxMin(char mk,float vk)
+{
+    switch (mk)
+    {
+    case 'x':
+        if (vk > maxValue.x)
+            maxValue.x = vk;
+        if (vk < minValue.x)
+            minValue.x = vk;
+        break;
+    case 'y':
+        if (vk > maxValue.y)
+            maxValue.y = vk;
+        if (vk < minValue.y)
+            minValue.y = vk;
+        break;
+    case 'z':
+        if (vk > maxValue.z)
+            maxValue.z = vk;
+        if (vk < minValue.z)
+            minValue.z = vk;
+        break;
+    }
+}
+
+void ModelParse::manageFaces(float k)
+{
+    vec3 range = maxValue - minValue;
+    vec3 offSet = range / 2 - maxValue;
+    //std::cout << std::endl << range << std::endl << offSet;
+    for (int i = 0; i < nverts(); i++)
+    {
+        vertices.at(i) += offSet;
+        vertices.at(i) /= (range/2);
+        vertices.at(i) *= k;
+    }
 }
