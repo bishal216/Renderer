@@ -9,8 +9,8 @@
 #include"ModelParse.h"
 #include"Transformations.h"
 
-#define WIDTH 800
-#define HEIGHT 800
+#define WIDTH 500
+#define HEIGHT 500
 #define FPS 60
 
 //functions for drawing
@@ -22,7 +22,7 @@ void cleargrid();							//Clears grid
 void myKeyboardFunc(unsigned char key, int x, int y);	//Keyboard 
 
 														//putpixel
-void putpixel(int x, int y, float zBuf, const vec3& col = 1);
+void putpixel(int x, int y, float zBuf, const vec3& col = 1,bool flat = false);
 
 //Our functions
 void LineBresenham_adjusted(int x1, int y1, int x2, int y2, const vec3_T<float>& color);
@@ -42,18 +42,18 @@ float* zBuffer;
 //ModelParse* object = new ModelParse("Object/TestCube.obj");
 //ModelParse* object = new ModelParse("Object/Head.obj");
 //ModelParse* object = new ModelParse("Object/Stupa3.obj");
-//ModelParse* object = new ModelParse("Object/Stupa4.obj");
+ModelParse* object = new ModelParse("Object/Stupa4.obj");
 //ModelParse* object = new ModelParse("Object/WallBedChair.obj");
-ModelParse* object = new ModelParse("Object/plane.obj");
+//ModelParse* object = new ModelParse("Object/plane.obj");
 
 
 int width = WIDTH;
 int height = HEIGHT;
 int depth = 500;
+bool doPers = true;
 
-
-//vec3 camera = { 0,0,3 };
-vec3 light_dir = vec3(0, 1, 1).normalize();;
+//vec3 camera = { 0,0,3 };	
+vec3 light_dir = vec3(0, 1, 1).normalize();
 vec3 eye = { 0,0,3 };
 vec3 translate = vec3(0, 0, 0), rotate = vec3(0, 0, 0), scale = vec3(1, 1, 1);
 

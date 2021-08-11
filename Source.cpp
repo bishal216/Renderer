@@ -80,6 +80,8 @@ void reshape(int w, int h) {
 auto lastframe = std::chrono::high_resolution_clock::now();
 float deltatime;
 
+//float random = 
+//vec3 clr = { std::rand()%255,intensity,intensity };
 void update(int value) {
     deltatime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - lastframe).count();
     lastframe = std::chrono::high_resolution_clock::now();
@@ -106,16 +108,22 @@ void update(int value) {
                 intensity[j] = 0;
             intensity[j] += 0.2;
         }
-        //vec3 n = vec3::cross((world[2] - world[0]), (world[1] - world[0]));
+        //------------------for flat shading
+        /*
+        vec3 n = vec3::cross((world[2] - world[0]), (world[1] - world[0]));
         //vec3 n = vec3::cross((points[2] - points[0]), (points[1] - points[0]));
-        //n.normalize();
-        //float intensity = n * light_dir;
+        n.normalize();
+        float intensity = n * light_dir;
         //intensity = 0.92;
-        //if (intensity > 0)
-        //{
-        triangle(points, zBuffer, GREEN, intensity);
-        //Triangle({ (int)points[0].x, (int)points[0].y }, { (int)points[1].x, (int)points[1].y }, { (int)points[2].x, (int)points[2].y },RED, true);
-    //}
+        if (intensity > 0)
+        {
+        //triangle(points, zBuffer, WHITE, intensity);
+            vec3 clr = { intensity,intensity,intensity };
+            Triangle({ (int)points[0].x, (int)points[0].y }, { (int)points[1].x, (int)points[1].y }, { (int)points[2].x, (int)points[2].y },clr, false);
+        }
+        */
+        //----------------for Gauraud
+        triangle(points, zBuffer, WHITE, intensity);
     }
     glutPostRedisplay();
     glutTimerFunc(1000 / FPS, update, 0);
@@ -167,8 +175,8 @@ void myKeyboardFunc(unsigned char key, int x, int y)
     case 'n':rotate.z += 0.1; break;
     case 'm':rotate.z -= 0.1; break;
     //scaling
-    case 'z': scale += 0.1; break;
-    case 'x': scale -= 0.1; break;
+    case 'z': scale /= 1.1; break;
+    case 'x': scale *= 1.1; break;
     
     //translation
     case 'w': translate.z+=0.01; break;
@@ -180,20 +188,33 @@ void myKeyboardFunc(unsigned char key, int x, int y)
     case 'q': translate.y-=0.01; break;
     case 'e': translate.y+=0.01; break;
 
+    //reset
+    case 'r': translate = 0; rotate = 0; scale = 1; break;
+
     case 27: exit(1);
     }
 }
 
-void putpixel(int x, int y, float zBuf, const vec3& col) {
+void putpixel(int x, int y, float zBuf, const vec3& col,bool flat) {
 
     width = (int)width;
     if (x < width && x >= 0 && y < height && y >= 0) {
-        if (zBuffer[x + y * width] <= zBuf)
+        if (flat)
         {
             color[x + y * width] = col;
             grid[x + y * width] = true;
             zBuffer[x + y * width] = zBuf;
         }
+        else
+        {
+            if (zBuffer[x + y * width] <= zBuf)
+            {
+                color[x + y * width] = col;
+                grid[x + y * width] = true;
+                zBuffer[x + y * width] = zBuf;
+            }
+        }
+           
 
     }
 }
@@ -252,9 +273,12 @@ void Triangle(vec2i t0, vec2i t1, vec2i t2, const vec3_T<float>& color, bool wir
 {
     if (wireframe == false)
         rasterize(t0, t1, t2, color);
-    LineBresenham_adjusted(t0.x, t0.y, t1.x, t1.y, color);
-    LineBresenham_adjusted(t0.x, t0.y, t2.x, t2.y, color);
-    LineBresenham_adjusted(t2.x, t2.y, t1.x, t1.y, color);
+    else {
+        LineBresenham_adjusted(t0.x, t0.y, t1.x, t1.y, color);
+        LineBresenham_adjusted(t0.x, t0.y, t2.x, t2.y, color);
+        LineBresenham_adjusted(t2.x, t2.y, t1.x, t1.y, color);
+    }
+    
 
 }
 void rasterize(vec2i V1, vec2i V2, vec2i V3, const vec3_T<float>& color)
@@ -281,7 +305,7 @@ void rasterize(vec2i V1, vec2i V2, vec2i V3, const vec3_T<float>& color)
             int Bx = V1.x + (V2.x - V1.x) * beta, By = V1.y + (V2.y - V1.y) * beta;
             if (Ax > Bx) { swap(Ax, Bx); }
             for (int j = Ax; j <= Bx; j++)
-                putpixel(j, y, 0, color);
+                putpixel(j, y, 1, color,true);
         }
 
     }
@@ -299,7 +323,7 @@ void rasterize(vec2i V1, vec2i V2, vec2i V3, const vec3_T<float>& color)
             int Bx = V2.x + (V3.x - V2.x) * beta, By = V2.y + (V3.y - V2.y) * beta;
             if (Ax > Bx) { swap(Ax, Bx); }
             for (int j = Ax; j <= Bx; j++)
-                putpixel(j, y, 0, color);
+                putpixel(j, y, 1, color, true);
         }
 
     }
@@ -319,13 +343,17 @@ vec3 world2screen(vec3 v) {
     float tempy = (float)((int)(((v.y + 1) * height / 2. + .5)));
     float tempz = (float)((v.z));
     vec3 temp = { tempx,tempy,tempz };
-
+    
     //perspective;
-    float r = -1 / eye.z;
-    tempx = (float)((int)(temp.x / (1 + r * temp.z) + 0.5));
-    tempy = (float)((int)(temp.y / (1 + r * temp.z) + 0.5));
-    tempz = temp.z / (1 + r * temp.z);
-
+    if (doPers)
+    {
+        float r = -1 / eye.z;
+        tempx = (float)((int)(temp.x / (1 + r * temp.z) + 0.5));
+        tempy = (float)((int)(temp.y / (1 + r * temp.z) + 0.5));
+        tempz = temp.z / (1 + r * temp.z);
+    }
+    
+    
      temp = { tempx,tempy,tempz };
     return temp;
 
@@ -361,16 +389,24 @@ vec3 barycentric(vec3& A, vec3& B, vec3& C, vec3& P) {
 void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color, float* intensity)
 {
 
-    bboxmin = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+    bboxmin = {std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
     bboxmax = { -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max() };
 
     for (int i = 0; i < 3; i++) {
         //kinda redundant but cannot loop this
+        //takes x and y from lowest to highest value of triangle
         bboxmin.x = std::min(bboxmin.x, pts[i].x);
         bboxmax.x = std::max(bboxmax.x, pts[i].x);
 
         bboxmin.y = std::min(bboxmin.y, pts[i].y);
         bboxmax.y = std::max(bboxmax.y, pts[i].y);
+
+        bboxmax.x = std::min(bboxmax.x, (float)width);
+        bboxmax.y = std::min(bboxmax.y, (float)height);
+
+        bboxmin.x = std::max(bboxmin.x, 0.f);
+        bboxmin.y = std::max(bboxmin.y, 0.f);
+
     }
     vec3 P;
     vec3 clr;
