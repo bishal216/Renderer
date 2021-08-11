@@ -4,7 +4,7 @@ template<class T>
 class transformation3D
 {
 public:
-    static vec3_T<T> scale(vec3_T<T> point, vec3_T<T> scaleFactor)
+    static vec3_T<T> scale(vec3_T<T> &point, vec3_T<T> &scaleFactor)
     {
         vec3_T<T> temp;
         temp.x = point.x * scaleFactor.x;
@@ -18,7 +18,7 @@ public:
         point =translate(point, centre);
         return point;
     }
-    static vec3_T<T> translate(vec3_T<T> point, vec3_T<T> translationVector)
+    static vec3_T<T> translate(vec3_T<T> &point, vec3_T<T> &translationVector)
     {
         vec3_T<T> temp;
         temp.x = point.x + translationVector.x;
@@ -27,7 +27,7 @@ public:
         return temp;
     }
 
-    static vec3_T<T> rotate(vec3_T<T> point, vec3_T<T> angle)
+    static vec3_T<T> rotate(vec3_T<T> &point, vec3_T<T>& angle)
     {
         vec3_T<T> temp = point;
 
@@ -54,13 +54,13 @@ public:
         }
         return temp;
     }
-    static vec3_T<T> rotatePoint(vec3_T<T> point, vec3_T<T> rotationFactor, vec3_T<T> centre) {
+    static vec3_T<T> rotatePoint(vec3_T<T>& point, vec3_T<T>& rotationFactor, vec3_T<T>& centre) {
         point = translate(point, -centre);
         point = rotate(point, rotationFactor);
         point = translate(point, centre);
         return point;
     }
-    static vec3_T<T> reflect(vec3_T<T> point, bool* ifReflect, vec3_T<T> axis)
+    static vec3_T<T> reflect(vec3_T<T>& point, bool* ifReflect, vec3_T<T>& axis)
     {
         vec3_T<T> temp = point;
         if (ifReflect[0] == 1)
@@ -71,7 +71,7 @@ public:
             temp.z = 2 * axis.z - point.z;
         return temp;
     }
-    static vec3_T<T> shear(vec3_T<T> point, vec3_T<T> shearFactor)
+    static vec3_T<T> shear(vec3_T<T>& point, vec3_T<T>& shearFactor)
     {
         vec3_T<T> temp = point;
         //Shear along X

@@ -7,7 +7,7 @@ void swap(T& a, T& b) {
 }
 
 template <class T>
-T higher(T a, T b)
+T higher(T &a, T &b)
 {
     if (a > b)
         return a;
@@ -15,7 +15,7 @@ T higher(T a, T b)
 }
 
 template <class T>
-T lower(T a, T b)
+T lower(T &a, T &b)
 {
     if (a < b)
         return a;
@@ -23,7 +23,7 @@ T lower(T a, T b)
 }
 
 template <class T>
-T clamp(T val, T lower = 0, T upper = 1)
+T clamp(T &val, T lower = 0, T upper = 1)
 {
     if (val < lower)
         return lower;

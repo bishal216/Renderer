@@ -32,6 +32,10 @@ void initcanvas(int argc, char** argv)
         color[x] = 0;
         zBuffer[x] = std::numeric_limits<float>::min();
     }
+    for (int i = 0; i < object->nfaces(); i++)
+        faceList.push_back(object->face(i));
+    for (int i = 0; i < object->nverts(); i++)
+        vertexList.push_back(object->vert(i));
 }
 void reshape(int w, int h) {
     auto oldWidth = width;
@@ -76,7 +80,6 @@ void reshape(int w, int h) {
 auto lastframe = std::chrono::high_resolution_clock::now();
 float deltatime;
 
-
 void update(int value) {
     deltatime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - lastframe).count();
     lastframe = std::chrono::high_resolution_clock::now();
@@ -87,20 +90,18 @@ void update(int value) {
 
     cleargrid();
 
-    for (int i = 0; i < object->nfaces(); i++)
+    for (int i = 0; i < faceList.size(); i++)
     {
-        std::vector<vec3i> face = object->face(i);
-        vec3 points[3], world[3]; //Screen and World co-ords
-        float intensity[3];         //intensity values for Gouraud shading
+        face = faceList.at(i);
         //vec2i screen[3];
         for (int j = 0; j < 3; j++)
         {
-            vec3 v = object->vert(face[j].x);
+            v = object->vert(face[j].x);
             v = transform(v);
-            //std::cout << v;
             points[j] = world2screen(v);
             world[j] = v;
-            intensity[j] = transformation3D<float>::rotate(object->norm(i, j), rotate) * light_dir;
+            normal = object->norm(i, j);
+            intensity[j] = transformation3D<float>::rotate( normal,rotate)* light_dir;
             if (intensity[j] < 0)
                 intensity[j] = 0;
             intensity[j] += 0.2;
@@ -120,6 +121,7 @@ void update(int value) {
     glutTimerFunc(1000 / FPS, update, 0);
 }
 void display() {
+
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
     //     glPointSize(5.5f);
@@ -131,8 +133,8 @@ void display() {
     for (GLint x = 0; x < width; ++x) {
         for (GLint y = 0; y < height; ++y) {
             if (grid[x + y * width]) {
-                vec3& c = color[x + y * width];
-                glColor4f(static_cast<float>(c.x), static_cast<float>(c.y), static_cast<float>(c.z), 1);
+                //vec3& c = color[x + y * width];
+                glColor4f(static_cast<float>(color[x + y * width].x), static_cast<float>(color[x + y * width].y), static_cast<float>(color[x + y * width].z), 1);
                 glVertex2i(x, y);
             }
         }
@@ -345,24 +347,24 @@ This deals with cross products and centre of masses. I don't exactly know the ph
 AFAIK, barycentric deals with its own Barycentric co-ordinates.
 The vertices of triangle form a simplex and their masses are positive iff
 */
-vec3 barycentric(vec3 A, vec3 B, vec3 C, vec3 P) {
-    vec3 s[2];
-    s[0] = { C.x - A.x , B.x - A.x , A.x - P.x };
-    s[1] = { C.y - A.y , B.y - A.y , A.y - P.y };
-    vec3 u = vec3::cross(s[0], s[1]);
-    if (std::abs(u.z) > 0/*1e-2*/) // dont forget that u.z is integer. If it is zero then triangle ABC is degenerate
-        return vec3(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
+vec3 barycentric(vec3& A, vec3& B, vec3& C, vec3& P) {
+    //vec3 s[2];
+    //s[0] = { C.x - A.x , B.x - A.x , A.x - P.x };
+    //s[1] = { C.y - A.y , B.y - A.y , A.y - P.y };
+    
+    CoG= vec3::cross({ C.x - A.x , B.x - A.x , A.x - P.x }, { C.y - A.y , B.y - A.y , A.y - P.y });
+    if (std::abs(CoG.z) > 0/*1e-2*/) // dont forget that u.z is integer. If it is zero then triangle ABC is degenerate
+        return vec3(1.f - (CoG.x + CoG.y) / CoG.z, CoG.y / CoG.z, CoG.x / CoG.z);
     return vec3(-1, 1, 1); // in this case generate negative coordinates, it will be thrown away by the rasterizator
 }
 
 void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color, float* intensity)
 {
 
-    vec2 bboxmin(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-    vec2 bboxmax(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
+    bboxmin = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+    bboxmax = { -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max() };
 
     for (int i = 0; i < 3; i++) {
-
         //kinda redundant but cannot loop this
         bboxmin.x = std::min(bboxmin.x, pts[i].x);
         bboxmax.x = std::max(bboxmax.x, pts[i].x);

@@ -117,23 +117,7 @@ std::vector<vec3i> ModelParse::face(int idx)
 
 vec3 ModelParse::norm(int idx, int i)
 {
-    int temp = faces.at(idx).at(i).z;   //z is normal
-    return normal.at(temp).normalize();
-}
-
-std::vector<vec3> ModelParse::returnVertices()
-{
-    return vertices;
-}
-
-std::vector<std::vector<vec3i>> ModelParse::returnFaces()
-{
-    return faces;
-}
-
-std::vector<vec3> ModelParse::returnNormals()
-{
-    return normal;
+    return normal.at(faces.at(idx).at(i).z).normalize();
 }
 
 void ModelParse::checkMaxMin(char mk,float vk)
