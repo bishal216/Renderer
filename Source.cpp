@@ -202,6 +202,10 @@ void myKeyboardFunc(unsigned char key, int x, int y)
     //reset
     case 'r': translate = { 0,-1,0 }; rotate = 0; scale = 0.05; break;
 
+    //light
+    case '<': light_dir.z+=0.2; break;
+    case '>': light_dir.z-=0.2; break;
+    
     //raster
     case '1': rMode = wireframe; break;
     case '2': rMode = flat; break;
@@ -362,6 +366,10 @@ void Drawface(FaceData face)
     {
         triangle(points, intensity, face.mtl.Ka, face.mtl.Kd);
     }break;
+    case(phong):
+    {
+        triangle(points, n, face.mtl.Ka, face.mtl.Kd,face.mtl.Ks,face.mtl.Ns);
+    };
     }
 }
 //For Wireframe
@@ -498,7 +506,7 @@ void triangle(vec3* pts,float* intensity,vec3 ka,vec3 kd)
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
 
             float it = (bc_screen.x) * intensity[0] + (bc_screen.y) * intensity[1] + (bc_screen.z) * intensity[2];
-            clr = ka + kd * it;
+            clr = kd + kd * it;
             clr /= 2;
             P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 1;
             putpixel(P, clr);
@@ -506,7 +514,7 @@ void triangle(vec3* pts,float* intensity,vec3 ka,vec3 kd)
     }
 }
 //For Phong Shading
-void triangle(vec3* pts, vec3* normal, vec3 ka, vec3 kd,vec3 ks)
+void triangle(vec3* pts, vec3* normal, vec3 ka, vec3 kd,vec3 ks,float alpha)
 {
 
     bboxmin = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
@@ -536,11 +544,24 @@ void triangle(vec3* pts, vec3* normal, vec3 ka, vec3 kd,vec3 ks)
         {
             vec3 bc_screen = barycentric(pts[0], pts[1], pts[2], P);
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
-
-            float it = (bc_screen.x) * intensity[0] + (bc_screen.y) * intensity[1] + (bc_screen.z) * intensity[2];
-            clr = ka + kd * it;
-            clr /= 2;
             P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 1;
+            float ia = 0.5;
+            
+            vec3 n = normal[0]* (bc_screen.x) + normal[1] * (bc_screen.y) + normal[2] * (bc_screen.z);
+            
+            float id = n * (world2screen(light_dir)-P).normalize();
+            id = clamp(id);
+            vec3 ref = -(world2screen(light_dir)-P).normalize() + n * (2.0f * id);
+            //alpha = 0.2;
+            //vec3 halfwayDir = vec3::normalize((world2screen(light_dir) - P).normalize() + eye.normalize());
+            //float is = pow(clamp(n * halfwayDir), alpha);
+            //vec3 tempvec = eye;
+            float is = pow(ref * eye,alpha);
+            //is = clamp(is);
+            is = higher(is, 0.f);
+            clr = (kd * ia) + ((kd * id)) +(ka * is);
+            clr /= 3;
+            clr = { clamp(clr.x),clamp(clr.y),clamp(clr.z) };
             putpixel(P, clr);
         }
     }

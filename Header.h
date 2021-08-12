@@ -28,7 +28,7 @@ void putpixel(vec3 P, const vec3& col);
 void LineBresenham_adjusted(vec3 v1, vec3 v2, const vec3_T<float>& color);
 void Flatrasterize(vec3 V1, vec3 V2, vec3 V3, const vec3_T<float>& color);
 void triangle(vec3* pts, float* intensity, vec3 ka, vec3 kd);
-void triangle(vec3* pts, vec3* normal, vec3 ka, vec3 kd, vec3 ks);
+void triangle(vec3* pts, vec3* normal, vec3 ka, vec3 kd, vec3 ks,float alpha);
 //For Camera
 vec3 world2screen(vec3 v);
 vec3 transform(vec3 pts);
@@ -38,8 +38,10 @@ bool* grid;
 vec3* color;
 float* zBuffer;
 
-//ModelParse* object = new ModelParse("Object/TestCube.obj");
-ModelParse* object = new ModelParse("Object/Stupa4.obj");
+
+//ModelParse* object = new ModelParse("Object/Stupa4.obj");
+//ModelParse* object = new ModelParse("Object/chopper.obj");
+ModelParse* object = new ModelParse("Object/untitled.obj");
 
 
 int width = WIDTH;

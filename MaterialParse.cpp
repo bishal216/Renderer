@@ -72,7 +72,7 @@ MaterialData MaterialParse::Material(int materialNumbeer)
     for(int i=0;i<nMaterials();i++)
         if(MaterialList.at(i).MaterialNumber == materialNumbeer)
             return MaterialList.at(i);
-    std::cerr << "No such material";
+    std::cerr << "No such material"<<materialNumbeer;
     exit(2);
 }
 

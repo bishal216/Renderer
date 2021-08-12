@@ -18,6 +18,9 @@ n-m : z-axis
 
 //reset transformations: 'r'
 
+//Light
+< > : z-axis translation of light 
+
 //raster mode
 1 : Wireframe
 2 : Flat
