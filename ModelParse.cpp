@@ -1,11 +1,7 @@
 #include "ModelParse.h"
-#include<fstream>
-#include<sstream>
-#include<string>
-#include<strstream>
 
 
-ModelParse::ModelParse(std::string filename) : vertices(), faces()
+ModelParse::ModelParse(std::string filename) : vertices()//, faces()
 {
     
     //std::cout << "Filename : " << filename;
@@ -19,16 +15,38 @@ ModelParse::ModelParse(std::string filename) : vertices(), faces()
         return;
     }
     std::string line;
-
+    char trash;
+    std::string str;
+    int MaterialNumber;
     while (!in.eof())
     {
         //get one line at a time
         std::getline(in, line);
-        //string object
         std::istringstream iss(line.c_str());
+        if (!line.compare(0, 6, "mtllib"))  //starts with v<space>
+        {
+            iss >> str >> str;
+            materialPath = "Object/" + str;
 
-        char trash;
-        if (!line.compare(0, 2, "v "))  //starts with v<space>
+        }
+    }
+    in.clear();
+    in.seekg(0);
+    MaterialParse MaterialObject(materialPath);
+    while (!in.eof())
+    {
+        //get one line at a time
+        std::getline(in, line);
+        std::istringstream iss(line.c_str());
+        
+        if (!line.compare(0, 6, "usemtl"))  //New Material
+        {
+            iss >> str >> str;
+            str = (str.substr(str.size() - 3));
+            std::stringstream tempss(str);
+            tempss >> MaterialNumber;
+        }
+        else if (!line.compare(0, 2, "v "))  //starts with v<space>
         {
             iss >> trash; // first character is v
             vec3 v;
@@ -43,6 +61,27 @@ ModelParse::ModelParse(std::string filename) : vertices(), faces()
         }
         else if (!line.compare(0, 2, "f ")) //starts with f<space>
         {
+            FaceData fD;
+            std::vector<vec3i> f;
+            vec3i temp;
+            iss >> trash; //first charecter is f
+            while (iss >> temp.x >> trash >> temp.y >> trash >> temp.z)  // in the form vert/vertTex/norm (vert is read, the rest are treated as trash)
+            {
+                //in wavefront obj all indices start at 1, not zero
+                temp.x--;   //vert
+                temp.y--;   //texture
+                temp.z--; // normal 
+                f.push_back(temp);
+            }
+            //faces.push_back(f);
+            for (int i = 0; i < 3; i++)
+            {
+                fD.vertices[i] = vert(f.at(i).x);
+                fD.normal[i] = norm(f.at(i).z);
+            }
+            fD.mtl = MaterialObject.Material(MaterialNumber);
+            FaceDataList.push_back(fD);
+            /*
             std::vector<vec3i> f;
             vec3i temp;
             iss >> trash; //first charecter is f
@@ -55,14 +94,8 @@ ModelParse::ModelParse(std::string filename) : vertices(), faces()
                 f.push_back(temp);
             }
             faces.push_back(f);
-        }
-        else if (!line.compare(0, 3, "vt "))    //starts with vt<space>
-        {
-            iss >> trash >> trash;//Ignore vt
-            vec2 uv;
-            iss >> uv.x;
-            iss >> uv.y;
-            textures.push_back(uv);
+            MaterialNumberList.push_back(MaterialNumber);
+            */
         }
 
         else if (!line.compare(0, 3, "vn "))    //starts with vn<space>
@@ -74,11 +107,9 @@ ModelParse::ModelParse(std::string filename) : vertices(), faces()
             iss >> n.z;
             normal.push_back(n);
         }
-       
     }
-    std::cout << nverts()<<std::endl;
-    manageFaces(0.8);
-    
+    //std::cout << nverts()<<std::endl;
+    manageFaces(1);
 }
 
 ModelParse::~ModelParse()
@@ -89,16 +120,17 @@ int ModelParse::nverts()
 {
     return (int)vertices.size();
 }
-
+/*
 int ModelParse::nfaces()
 {
     return (int)faces.size();
 }
-
-int ModelParse::ntextures()
+*/
+int ModelParse::nfaceData()
 {
-    return(int)textures.size();
+    return FaceDataList.size();
 }
+
 
 int ModelParse::nnormal()
 {
@@ -109,17 +141,27 @@ vec3 ModelParse::vert(int i)
 {
     return vertices.at(i);
 }
-
+/*
 std::vector<vec3i> ModelParse::face(int idx)
 {
     return faces.at(idx);
 }
+*/
+FaceData ModelParse::returnFaceData(int idx)
+{
+    return FaceDataList.at(idx);
+}
 
+vec3 ModelParse::norm(int i)
+{
+    return normal.at(i);
+}
+/*
 vec3 ModelParse::norm(int idx, int i)
 {
     return normal.at(faces.at(idx).at(i).z).normalize();
 }
-
+*/
 void ModelParse::checkMaxMin(char mk,float vk)
 {
     switch (mk)

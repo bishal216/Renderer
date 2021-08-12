@@ -10,7 +10,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd Renderer\\Object\\swayambhunath\\texture.jpg
 
 newmtl Material.002
 Ns 225.000000
@@ -21,7 +20,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd Renderer\\Object\\swayambhunath\\texture2.jpg
 
 newmtl Material.003
 Ns 225.000000
@@ -32,7 +30,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd Renderer\\Object\\swayambhunath\\texture2.jpg
 
 newmtl Material.004
 Ns 225.000000
@@ -43,7 +40,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd Renderer\\Object\\swayambhunath\\texture2.jpg
 
 newmtl Material.005
 Ns 225.000000
@@ -54,7 +50,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd Renderer\\Object\\swayambhunath\\texture2.jpg
 
 newmtl Material.006
 Ns 225.000000
@@ -625,4 +620,3 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd Renderer\\Object\\swayambhunath\\66617924_397112724484487_5789801930041589760_n.jpg

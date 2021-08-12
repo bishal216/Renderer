@@ -32,10 +32,14 @@ void initcanvas(int argc, char** argv)
         color[x] = 0;
         zBuffer[x] = std::numeric_limits<float>::min();
     }
+    /*
     for (int i = 0; i < object->nfaces(); i++)
         faceList.push_back(object->face(i));
     for (int i = 0; i < object->nverts(); i++)
         vertexList.push_back(object->vert(i));
+    */
+    for (int i = 0; i < object->nfaceData(); i++)
+        fDList.push_back(object->returnFaceData(i));
 }
 void reshape(int w, int h) {
     auto oldWidth = width;
@@ -88,10 +92,17 @@ void update(int value) {
     //std::cout << 1e6 / deltatime<<std::endl;
     glutSetWindowTitle(std::to_string(1e6 / deltatime).c_str());
     //const vec3_T<float>& clr = { (float)(rand() % 255) / 255 ,(float)(rand() % 255) / 255 ,(float)(rand() % 255) / 255 };
-
+    //light_dir.normalize();
+    Rotatelight();
+    std::cout << light_dir;
 
     cleargrid();
-
+    for (int i = 0; i < fDList.size(); i++)
+    {
+        fD = fDList.at(i);
+        Drawface(fD);
+    }
+    /*
     for (int i = 0; i < faceList.size(); i++)
     {
         face = faceList.at(i);
@@ -117,14 +128,14 @@ void update(int value) {
         //intensity = 0.92;
         if (intensity > 0)
         {
-        //triangle(points, zBuffer, WHITE, intensity);
             vec3 clr = { intensity,intensity,intensity };
             Triangle({ (int)points[0].x, (int)points[0].y }, { (int)points[1].x, (int)points[1].y }, { (int)points[2].x, (int)points[2].y },clr, false);
         }
         */
         //----------------for Gauraud
-        triangle(points, zBuffer, WHITE, intensity);
-    }
+        //triangle(points, zBuffer, WHITE, intensity);
+    //}
+
     glutPostRedisplay();
     glutTimerFunc(1000 / FPS, update, 0);
 }
@@ -189,145 +200,37 @@ void myKeyboardFunc(unsigned char key, int x, int y)
     case 'e': translate.y+=0.01; break;
 
     //reset
-    case 'r': translate = 0; rotate = 0; scale = 1; break;
+    case 'r': translate = { 0,-1,0 }; rotate = 0; scale = 0.05; break;
 
+    //raster
+    case '1': rMode = wireframe; break;
+    case '2': rMode = flat; break;
+    case '3': rMode = gauraud; break;
+    case '4': rMode = phong; break;
+
+    //toggles:
+    case 'p': doPers = !doPers; break;
+    case 'l': lightRevolve = !lightRevolve; break;
     case 27: exit(1);
     }
 }
 
-void putpixel(int x, int y, float zBuf, const vec3& col,bool flat) {
-
-    width = (int)width;
-    if (x < width && x >= 0 && y < height && y >= 0) {
-        if (flat)
-        {
-            color[x + y * width] = col;
-            grid[x + y * width] = true;
-            zBuffer[x + y * width] = zBuf;
-        }
-        else
-        {
-            if (zBuffer[x + y * width] <= zBuf)
-            {
-                color[x + y * width] = col;
-                grid[x + y * width] = true;
-                zBuffer[x + y * width] = zBuf;
-            }
-        }
-           
-
-    }
-}
-
-void LineBresenham_adjusted(int x1, int y1, int x2, int y2, const vec3_T<float>& color)
-{
-    int dx, dy;
-    int steps, k;
-    dx = abs(x2 - x1);
-    dy = abs(y2 - y1);
-    //Sets increment/decrement : stepsize
-    int lx, ly;
-
-    if (x2 > x1) { lx = 1; }
-    else { lx = -1; }
-
-    if (y2 > y1) { ly = 1; }
-    else { ly = -1; }
-    //initialize
-    int x = x1, y = y1;
-    //slope<1
-    if (dx > dy) {
-        int p = 2 * dy - dx;
-        for (int k = 0; k <= dx; k++) {
-            putpixel(x, y, INT_MAX, color);
-            if (p < 0) {
-                x += lx;
-                p += 2 * dy;
-            }
-            else {
-                x += lx;
-                y += ly;
-                p += 2 * dy - 2 * dx;
-            }
-        }
-    }
-    //if slope>=1
-    else {
-        int p = 2 * dx - dy;
-        for (int k = 0; k <= dy; k++) {
-            putpixel(x, y, 1, color);
-            if (p < 0) {
-                y += ly;
-                p += 2 * dx;
-            }
-            else {
-                x += lx;
-                y += ly;
-                p += 2 * dx - 2 * dy;
-            }
-        }
-    }
-    putpixel(x, y, INT_MAX, color);
-}
-void Triangle(vec2i t0, vec2i t1, vec2i t2, const vec3_T<float>& color, bool wireframe)
-{
-    if (wireframe == false)
-        rasterize(t0, t1, t2, color);
-    else {
-        LineBresenham_adjusted(t0.x, t0.y, t1.x, t1.y, color);
-        LineBresenham_adjusted(t0.x, t0.y, t2.x, t2.y, color);
-        LineBresenham_adjusted(t2.x, t2.y, t1.x, t1.y, color);
-    }
-    
-
-}
-void rasterize(vec2i V1, vec2i V2, vec2i V3, const vec3_T<float>& color)
-{
-    if (V1.y == V2.y && V2.y == V3.y) return;
-    //Bubble sort on y-position
-    if (V1.y > V2.y) { swap(V1, V2); }
-    if (V1.y > V3.y) { swap(V1, V3); }
-    if (V2.y > V3.y) { swap(V3, V2); }
-
-    //divide triangle into two halves
-
-    int height = V3.y - V1.y;
-
-    for (int y = V1.y; y <= V2.y; y++)
+void putpixel(vec3 P, const vec3& col) {
+    //P = { (int)P.x,(int)P.y,(int)P.z };
+    width = (int)width, height = (int)height;
+    if (rMode == wireframe)
+        P.z = 1;
+    if (P.x < width && P.x >= 0 && P.y < height && P.y >= 0) 
     {
-        int partialHeight = V2.y - V1.y + 1; // +1 because both upper and lower limit is included
-
-        float alpha = (float)(y - V1.y) / height;// be careful with divisions by zero 
-        if (partialHeight != 0)
+        if (zBuffer[(int)(P.x + P.y * width)] <= P.z)
         {
-            float beta = (float)(y - V1.y) / partialHeight;
-            int Ax = (V1.x + (V3.x - V1.x) * alpha), Ay = V1.y + (V3.y - V1.y) * alpha;
-            int Bx = V1.x + (V2.x - V1.x) * beta, By = V1.y + (V2.y - V1.y) * beta;
-            if (Ax > Bx) { swap(Ax, Bx); }
-            for (int j = Ax; j <= Bx; j++)
-                putpixel(j, y, 1, color,true);
+            color[(int)(P.x + P.y * width)] = col;
+            grid[(int)(P.x + P.y * width)] = true;
+            zBuffer[(int)(P.x + P.y * width)] = P.z;
         }
-
-    }
-
-    for (int y = V2.y; y <= V3.y; y++)
-    {
-        int partialHeight = V3.y - V2.y + 1; // +1 because both upper and lower limit is included
-
-        float alpha = (float)(y - V1.y) / height;
-        if (partialHeight != 0)
-        {
-            float beta = (float)(y - V2.y) / partialHeight; // be careful with divisions by zero 
-
-            int Ax = V1.x + (V3.x - V1.x) * alpha, Ay = V1.y + (V3.y - V1.y) * alpha;
-            int Bx = V2.x + (V3.x - V2.x) * beta, By = V2.y + (V3.y - V2.y) * beta;
-            if (Ax > Bx) { swap(Ax, Bx); }
-            for (int j = Ax; j <= Bx; j++)
-                putpixel(j, y, 1, color, true);
-        }
-
     }
 }
+
 
 vec3 world2screen(vec3 v) {
 
@@ -416,12 +319,241 @@ void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color, float* inte
         {
             vec3 bc_screen = barycentric(pts[0], pts[1], pts[2], P);
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
+            
             clr = color * (bc_screen.x) * intensity[0] + color * (bc_screen.y) * intensity[1] + color * (bc_screen.z) * intensity[2];
             //std::cout << clr << std::endl;
-           // clr /= 3;
+            // clr /= 3;
             P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 1;
-            putpixel(P.x, P.y, P.z, clr);
+            putpixel(P, clr);
 
         }
+    }
+}
+
+void Drawface(FaceData face)
+{
+    for (int j = 0; j < 3; j++)
+    {
+        
+        v = face.vertices[j];           //reads 3 vertices
+        v = transform(v);               //transforms said vertices
+        points[j] = world2screen(v);    //projects to screen
+        world[j] = v;                   //real world co-ords
+        n[j] = transformation3D<float>::rotate(face.normal[j],rotate);
+        intensity[j] = ((n[j] * light_dir));
+    }
+    surfaceNormal = vec3::cross((world[2] - world[0]), (world[1] - world[0])).normalize();
+    switch (rMode)
+    {
+    case(wireframe):
+        if (surfaceNormal * eye <0)
+        {
+            LineBresenham_adjusted(points[0], points[1], fD.mtl.Kd);
+            LineBresenham_adjusted(points[0],points[2], fD.mtl.Kd);
+            LineBresenham_adjusted(points[2],points[1], fD.mtl.Kd);
+            
+        }break;
+    case(flat):
+    {   if (surfaceNormal * eye < 0)
+        if (vec3(0,0,-1) *surfaceNormal > 0)
+                Flatrasterize(points[0], points[1], points[2], fD.mtl.Kd);
+    }break;
+    case(gauraud):
+    {
+        triangle(points, intensity, face.mtl.Ka, face.mtl.Kd);
+    }break;
+    }
+}
+//For Wireframe
+void LineBresenham_adjusted(vec3 v1, vec3 v2, const vec3_T<float>& color)
+{
+    int x1 = v1.x, x2 = v2.x, y1 = v1.y, y2 = v2.y;
+    int dx, dy;
+    int steps, k;
+    dx = abs(x2 - x1);
+    dy = abs(y2 - y1);
+    //Sets increment/decrement : stepsize
+    int lx, ly;
+
+    if (x2 > x1) { lx = 1; }
+    else { lx = -1; }
+
+    if (y2 > y1) { ly = 1; }
+    else { ly = -1; }
+    //initialize
+    int x = x1, y = y1;
+    //slope<1
+    if (dx > dy) {
+        int p = 2 * dy - dx;
+        for (int k = 0; k <= dx; k++) {
+            putpixel({ (float)x, (float)y, (float)INT_MAX }, color);
+            if (p < 0) {
+                x += lx;
+                p += 2 * dy;
+            }
+            else {
+                x += lx;
+                y += ly;
+                p += 2 * dy - 2 * dx;
+            }
+        }
+    }
+    //if slope>=1
+    else {
+        int p = 2 * dx - dy;
+        for (int k = 0; k <= dy; k++) {
+            putpixel({ (float)x, (float)y, (float)INT_MAX }, color);
+            if (p < 0) {
+                y += ly;
+                p += 2 * dx;
+            }
+            else {
+                x += lx;
+                y += ly;
+                p += 2 * dx - 2 * dy;
+            }
+        }
+    }
+    putpixel({ (float)x, (float)y, (float)INT_MAX }, color);
+}
+//For Flat Shading
+void Flatrasterize(vec3 V1, vec3 V2, vec3 V3, const vec3_T<float>& color)
+{
+    if (V1.y == V2.y && V2.y == V3.y) return;
+    //Bubble sort on y-position
+    if (V1.y > V2.y) { swap(V1, V2); }
+    if (V1.y > V3.y) { swap(V1, V3); }
+    if (V2.y > V3.y) { swap(V3, V2); }
+
+    //divide triangle into two halves
+
+    int height = V3.y - V1.y;
+
+    for (int y = V1.y; y <= V2.y; y++)
+    {
+        int partialHeight = V2.y - V1.y + 1; // +1 because both upper and lower limit is included
+
+        float alpha = (float)(y - V1.y) / height;// be careful with divisions by zero 
+        if (partialHeight != 0)
+        {
+            float beta = (float)(y - V1.y) / partialHeight;
+            int Ax = (V1.x + (V3.x - V1.x) * alpha), Ay = V1.y + (V3.y - V1.y) * alpha, Az = V1.z + (V3.z - V1.z) * alpha;
+            int Bx = V1.x + (V2.x - V1.x) * beta, By = V1.y + (V2.y - V1.y) * beta, Bz = V1.z + (V3.z - V1.z) * beta;
+
+            if (Ax > Bx) { swap(Ax, Bx); }
+            for (int j = Ax; j <= Bx; j++)
+                putpixel({ (float)j, (float)y, (float)INT_MAX }, color);
+        }
+
+    }
+
+    for (int y = V2.y; y <= V3.y; y++)
+    {
+        int partialHeight = V3.y - V2.y + 1; // +1 because both upper and lower limit is included
+
+        float alpha = (float)(y - V1.y) / height;
+        if (partialHeight != 0)
+        {
+            float beta = (float)(y - V2.y) / partialHeight; // be careful with divisions by zero 
+
+            int Ax = V1.x + (V3.x - V1.x) * alpha, Ay = V1.y + (V3.y - V1.y) * alpha, Az = V1.z + (V3.z - V1.z) * alpha;
+            int Bx = V2.x + (V3.x - V2.x) * beta, By = V2.y + (V3.y - V2.y) * beta, Bz = V2.z + (V3.z - V2.z) * beta;
+            if (Ax > Bx) { swap(Ax, Bx); }
+            for (int j = Ax; j <= Bx; j++)
+                putpixel({ (float)j, (float)y, (float)INT_MAX }, color);
+        }
+
+    }
+}
+//For Gauraud Shading
+void triangle(vec3* pts,float* intensity,vec3 ka,vec3 kd)
+{
+
+    bboxmin = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+    bboxmax = { -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max() };
+
+    for (int i = 0; i < 3; i++) {
+        //kinda redundant but cannot loop this
+        //takes x and y from lowest to highest value of triangle
+        bboxmin.x = std::min(bboxmin.x, pts[i].x);
+        bboxmax.x = std::max(bboxmax.x, pts[i].x);
+
+        bboxmin.y = std::min(bboxmin.y, pts[i].y);
+        bboxmax.y = std::max(bboxmax.y, pts[i].y);
+
+        bboxmax.x = std::min(bboxmax.x, (float)width);
+        bboxmax.y = std::min(bboxmax.y, (float)height);
+
+        bboxmin.x = std::max(bboxmin.x, 0.f);
+        bboxmin.y = std::max(bboxmin.y, 0.f);
+
+    }
+    vec3 P;
+    vec3 clr;
+    for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++)
+    {
+        for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++)
+        {
+            vec3 bc_screen = barycentric(pts[0], pts[1], pts[2], P);
+            if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
+
+            float it = (bc_screen.x) * intensity[0] + (bc_screen.y) * intensity[1] + (bc_screen.z) * intensity[2];
+            clr = ka + kd * it;
+            clr /= 2;
+            P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 1;
+            putpixel(P, clr);
+        }
+    }
+}
+//For Phong Shading
+void triangle(vec3* pts, vec3* normal, vec3 ka, vec3 kd,vec3 ks)
+{
+
+    bboxmin = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+    bboxmax = { -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max() };
+
+    for (int i = 0; i < 3; i++) {
+        //kinda redundant but cannot loop this
+        //takes x and y from lowest to highest value of triangle
+        bboxmin.x = std::min(bboxmin.x, pts[i].x);
+        bboxmax.x = std::max(bboxmax.x, pts[i].x);
+
+        bboxmin.y = std::min(bboxmin.y, pts[i].y);
+        bboxmax.y = std::max(bboxmax.y, pts[i].y);
+
+        bboxmax.x = std::min(bboxmax.x, (float)width);
+        bboxmax.y = std::min(bboxmax.y, (float)height);
+
+        bboxmin.x = std::max(bboxmin.x, 0.f);
+        bboxmin.y = std::max(bboxmin.y, 0.f);
+
+    }
+    vec3 P;
+    vec3 clr;
+    for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++)
+    {
+        for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++)
+        {
+            vec3 bc_screen = barycentric(pts[0], pts[1], pts[2], P);
+            if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
+
+            float it = (bc_screen.x) * intensity[0] + (bc_screen.y) * intensity[1] + (bc_screen.z) * intensity[2];
+            clr = ka + kd * it;
+            clr /= 2;
+            P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 1;
+            putpixel(P, clr);
+        }
+    }
+}
+void Rotatelight()
+{
+    if (lightRevolve)
+    {
+        light_dir.x = cos(theta  * 3.1415f / 180);
+        light_dir.y = sin(theta  * 3.1415f / 180);
+        theta+=stepsize;
+        if (theta > 180 || theta < 0)
+            stepsize = -stepsize;
+        
     }
 }

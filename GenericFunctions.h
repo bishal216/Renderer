@@ -23,7 +23,7 @@ T lower(T &a, T &b)
 }
 
 template <class T>
-T clamp(T &val, T lower = 0, T upper = 1)
+T clamp(T &val, T lower = 0.f, T upper = 1.f)
 {
     if (val < lower)
         return lower;

@@ -54,12 +54,7 @@ public:
         }
         return temp;
     }
-    static vec3_T<T> rotatePoint(vec3_T<T>& point, vec3_T<T>& rotationFactor, vec3_T<T>& centre) {
-        point = translate(point, -centre);
-        point = rotate(point, rotationFactor);
-        point = translate(point, centre);
-        return point;
-    }
+   
     static vec3_T<T> reflect(vec3_T<T>& point, bool* ifReflect, vec3_T<T>& axis)
     {
         vec3_T<T> temp = point;

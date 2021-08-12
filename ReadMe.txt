@@ -1,4 +1,7 @@
 Controls:
+//toggles
+p: perspective
+l: light rotate
 //Translation
 w-s : z translation
 a-d: x translation
@@ -9,6 +12,14 @@ z: Up
 x:Down
 
 //Rotation
-i-o : x
-j-k : y
-n-m : z
+i-o : x-axis
+j-k : y-axis
+n-m : z-axis
+
+//reset transformations: 'r'
+
+//raster mode
+1 : Wireframe
+2 : Flat
+3 : Gauraud
+4 : Phong
