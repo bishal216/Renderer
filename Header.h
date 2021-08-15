@@ -28,7 +28,7 @@ void putpixel(vec3 P, const vec3& col);
 void LineBresenham_adjusted(vec3 v1, vec3 v2, const vec3_T<float>& color);
 void Flatrasterize(vec3 V1, vec3 V2, vec3 V3, const vec3_T<float>& color);
 void triangle(vec3* pts, float* intensity, vec3 ka, vec3 kd);
-void triangle(vec3* pts, vec3* normal, vec3 ka, vec3 kd, vec3 ks,float alpha);
+void triangle(vec3* world,vec3* pts, vec3* normal, vec3 ka, vec3 kd, vec3 ks,float alpha);
 //For Camera
 vec3 world2screen(vec3 v);
 vec3 transform(vec3 pts);
@@ -51,7 +51,7 @@ bool doPers = true;
 bool lightRevolve = false;
 int theta = 0,stepsize=1;
 //vec3 camera = { 0,0,3 };	
-vec3 light_dir = vec3(1, 1, 0);
+vec3 light_dir = vec3(1, 0, 0);
 vec3 eye = { 0,0,3 };
 vec3 translate = vec3(0, -1, 0), rotate = vec3(0, 0, 0), scale = vec3(0.05, 0.05, 0.05);
 

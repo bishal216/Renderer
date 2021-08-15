@@ -368,7 +368,7 @@ void Drawface(FaceData face)
     }break;
     case(phong):
     {
-        triangle(points, n, face.mtl.Ka, face.mtl.Kd,face.mtl.Ks,face.mtl.Ns);
+        triangle(world,points, n, face.mtl.Ka, face.mtl.Kd,face.mtl.Ks,face.mtl.Ns);
     };
     }
 }
@@ -514,7 +514,7 @@ void triangle(vec3* pts,float* intensity,vec3 ka,vec3 kd)
     }
 }
 //For Phong Shading
-void triangle(vec3* pts, vec3* normal, vec3 ka, vec3 kd,vec3 ks,float alpha)
+void triangle(vec3* world, vec3* pts, vec3* normal, vec3 ka, vec3 kd, vec3 ks, float alpha)
 {
 
     bboxmin = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
@@ -545,21 +545,22 @@ void triangle(vec3* pts, vec3* normal, vec3 ka, vec3 kd,vec3 ks,float alpha)
             vec3 bc_screen = barycentric(pts[0], pts[1], pts[2], P);
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
             P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 1;
-            float ia = 0.5;
-            
-            vec3 n = normal[0]* (bc_screen.x) + normal[1] * (bc_screen.y) + normal[2] * (bc_screen.z);
-            
-            float id = n * (world2screen(light_dir)-P).normalize();
+            float ia = 1;
+
+            vec3 n = normal[0] * (bc_screen.x) + normal[1] * (bc_screen.y) + normal[2] * (bc_screen.z);
+
+            float id = n * (world2screen(light_dir) - P).normalize();
             id = clamp(id);
-            vec3 ref = -(world2screen(light_dir)-P).normalize() + n * (2.0f * id);
+            vec3 ref = -(world2screen(light_dir) - P).normalize() + n * (2.0f * id);
             //alpha = 0.2;
-            //vec3 halfwayDir = vec3::normalize((world2screen(light_dir) - P).normalize() + eye.normalize());
+            //alpha = 6000;
+            //vec3 halfwayDir = vec3::normalize((world2screen(light_dir) - P).normalize() + eye);
             //float is = pow(clamp(n * halfwayDir), alpha);
             //vec3 tempvec = eye;
-            float is = pow(ref * eye,alpha);
+            float is = pow(ref * eye, alpha);
             //is = clamp(is);
             is = higher(is, 0.f);
-            clr = (kd * ia) + ((kd * id)) +(ka * is);
+            clr = (kd * ia) + ((kd * id)) + (ks * is);
             clr /= 3;
             clr = { clamp(clr.x),clamp(clr.y),clamp(clr.z) };
             putpixel(P, clr);
@@ -568,10 +569,11 @@ void triangle(vec3* pts, vec3* normal, vec3 ka, vec3 kd,vec3 ks,float alpha)
 }
 void Rotatelight()
 {
+    std::cout << lightRevolve;
     if (lightRevolve)
     {
-        light_dir.x = cos(theta  * 3.1415f / 180);
-        light_dir.y = sin(theta  * 3.1415f / 180);
+        light_dir.x = 2 * cos(theta  * 3.1415f / 180);
+        light_dir.y = 2 * sin(theta  * 3.1415f / 180);
         theta+=stepsize;
         if (theta > 180 || theta < 0)
             stepsize = -stepsize;
