@@ -22,6 +22,9 @@ void initcanvas(int argc, char** argv)
     glutReshapeFunc(reshape);
     glutDisplayFunc(display);
     glutKeyboardFunc(myKeyboardFunc);
+    glutMouseFunc(myMouseFunc);
+    glutPassiveMotionFunc(myPassiveMotionFunc);
+    glutWarpPointer(width/2, height/2);
     // Do drawing here
     grid = new bool[WIDTH * HEIGHT];
     color = new vec3[WIDTH * HEIGHT];
@@ -94,7 +97,7 @@ void update(int value) {
     //const vec3_T<float>& clr = { (float)(rand() % 255) / 255 ,(float)(rand() % 255) / 255 ,(float)(rand() % 255) / 255 };
     //light_dir.normalize();
     Rotatelight();
-    std::cout << light_dir;
+    // std::cout << light_dir;
 
     cleargrid();
     for (int i = 0; i < fDList.size(); i++)
@@ -140,7 +143,7 @@ void update(int value) {
     glutTimerFunc(1000 / FPS, update, 0);
 }
 void display() {
-
+    glClearColor(0, 181.f/255, 204.f/255, 1);
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
     //     glPointSize(5.5f);
@@ -200,30 +203,46 @@ void myKeyboardFunc(unsigned char key, int x, int y)
     case 'e': translate.y+=0.01; break;
 
     //reset
-    case 'r': translate = { 0,-1,0 }; rotate = 0; scale = 0.05; break;
+    case 'r': translate = 0; rotate = 0; scale = 1; lookAt = 0; glutWarpPointer(width / 2, height / 2);eye = { 0,0,800 }; break;
 
     //light
     case '<': light_dir.z+=0.2; break;
     case '>': light_dir.z-=0.2; break;
     
     //raster
+    case '0': rMode = vertexGrid; break;
     case '1': rMode = wireframe; break;
     case '2': rMode = flat; break;
     case '3': rMode = gauraud; break;
     case '4': rMode = phong; break;
 
+    //eye movement
+    case'y':eye.x+= 10;break;
+    case'u':eye.x-=10;break;
+    case'g':eye.y+=10;break;
+    case'h':eye.y-=10;break;
+    case'v':eye.z+=10;break;
+    case'b':eye.z-=10;break;
+    
     //toggles:
     case 'p': doPers = !doPers; break;
     case 'l': lightRevolve = !lightRevolve; break;
     case 27: exit(1);
     }
 }
+void myMouseFunc(int button, int state, int x, int y)
+{
 
+}
+void myPassiveMotionFunc(int x, int y) {
+    //lookAt = { 1.f * x,1.f * y, (float)( sqrt( pow(rad,2) - ( pow(x- eye.x,2) + pow(y - eye.y,2) ) ) - eye.z) };
+    lookAt = {1.f * x-width/2.f,(-1.f * y+height/2.f), eye.z - 400};
+    if (lookAt.y > 0)
+        lookAt.y = 0;
+    std::cout << lookAt;
+}
 void putpixel(vec3 P, const vec3& col) {
-    //P = { (int)P.x,(int)P.y,(int)P.z };
     width = (int)width, height = (int)height;
-    if (rMode == wireframe)
-        P.z = 1;
     if (P.x < width && P.x >= 0 && P.y < height && P.y >= 0) 
     {
         if (zBuffer[(int)(P.x + P.y * width)] <= P.z)
@@ -235,23 +254,89 @@ void putpixel(vec3 P, const vec3& col) {
     }
 }
 
+mat4 res;
+vec3 x, y, z;
+vec3 up = { 0,1,0 };
+mat4 ModalMatrix()
+{ 
+    z = (eye - lookAt).normalize();
+//    up = transformation3D<float>::rotate(z, { 1.57,0,0 });
+    x = vec3::cross(up,z).normalize();
+    y = vec3::cross(z, x).normalize();
+    /*
+        xx xy xz -cx
+        yx yy yx -cy
+        zx zy zz -cz
+         0  0  0   1
+    */
+        res(0,0) = x.x;
+        res(0,1) = x.y;
+        res(0,2) = x.z;
 
+        res(1, 0) = y.x;
+        res(1, 1) = y.y;
+        res(1, 2) = y.z;
+
+        res(2, 0) = z.x;
+        res(2, 1) = z.y;
+        res(2, 2) = z.z;
+        
+        res(0, 3) = -lookAt.x;
+        res(1, 3) = -lookAt.y;
+        res(2, 3) = -lookAt.z;
+        
+    return res;
+}
+mat4 m;
+mat4 ViewMatrix()
+{
+   
+    m(0,3) = width / 2.f;
+    m(1,3) = height / 2.f;
+    m(2,3) = depth / 2.f;
+
+    m(0,0) = width / 2.f;
+    m(1,1) = height / 2.f;
+    m(2,2) = depth / 2.f;
+    return m;
+}
+mat4 projMat;
+mat4 ProjectionMatrix()
+{
+    if(eye.z!=0)
+        projMat(3, 2) = -1.f / eye.z;
+    return projMat;
+}
+float tempx, tempy, tempz;
 vec3 world2screen(vec3 v) {
 
-    /*
-    mat4 ModelView = lookat(eye, center, vec3(0, 1, 0));
-    mat4 Projection;
-    mat4 ViewPort = viewport(width*0.1,height*0.1, width * 0.8, height * 0.8);
-    Projection(3, 2) = -1.0f / ((eye - center).normalize()).z;
-    return (ViewPort * Projection * ModelView * (v));
-    */
-
-    float tempx = (float)((int)(((v.x + 1) * width / 2. + .5)));
-    float tempy = (float)((int)(((v.y + 1) * height / 2. + .5)));
-    float tempz = (float)((v.z));
-    vec3 temp = { tempx,tempy,tempz };
+    //return ViewMatrix()*ProjectionMatrix() * ModalMatrix() * v;
     
-    //perspective;
+    vec3 temp = v;
+    //Modal Matrix (eye,centre,up)
+    //eye = eye
+    //centre = lookAt
+    
+    z = (eye - lookAt).normalize();
+    x = vec3::cross(up, z).normalize();
+    y = vec3::cross(z, x).normalize();
+ 
+    tempx = x.x * v.x + x.y * v.y + x.z * v.z;// +lookAt.x / width;
+    tempy = y.x * v.x + y.y * v.y + y.z * v.z;// +lookAt.y / height;
+    tempz = z.x * v.x + z.y * v.y + z.z * v.z;// +lookAt.z / depth;
+    temp = { tempx,tempy,tempz };
+    //temp = ModalMatrix() * v;
+    //Projection perspective;
+   
+    
+   //View
+    tempx = (float)((int)(((temp.x + 1) * width / 2. + .5) - width/2)); 
+    tempy = (float)((int)(((temp.y + 1) * height / 2. + .5) - height/2));
+    tempz = (float)((temp.z));   
+
+
+    temp = { tempx,tempy,tempz };
+
     if (doPers)
     {
         float r = -1 / eye.z;
@@ -259,18 +344,34 @@ vec3 world2screen(vec3 v) {
         tempy = (float)((int)(temp.y / (1 + r * temp.z) + 0.5));
         tempz = temp.z / (1 + r * temp.z);
     }
-    
-    
-     temp = { tempx,tempy,tempz };
-    return temp;
+    temp = { tempx,tempy,tempz };
 
+    return temp;
+    /*
+   // return ViewMatrix()*ModalMatrix({0, 1, 0})* v;
+    // Projection Matrix
+    float fNear = 0.1f;
+    float fFar = 1000.0f;
+    float fFov = 90.0f;
+    float fAspectRatio = (float)height / (float)width;
+    float fFovRad = 1.0f / tanf(fFov * 0.5f / 180.0f * 3.14159f);
+    mat4 matProj;
+    matProj(0,0) = fAspectRatio * fFovRad;
+    matProj(1,1) = fFovRad;
+    matProj(2,2) = fFar / (fFar - fNear);
+    matProj(3,2) = (-fFar * fNear) / (fFar - fNear);
+    matProj(2,3) = 1.0f;
+    matProj(3,3) = 0.0f;
+    
+    return matProj * v;
+    */
 }
 
 vec3 transform(vec3 pts)
 {
     //transformation
     vec3 temp = transformation3D<float>::rotate(pts, rotate);
-    temp = transformation3D<float>::scale(temp, scale);
+    temp = transformation3D<float>::scalePoint(temp, scale, { 0.5f,0.5f,0 });
     temp = transformation3D<float>::translate(temp, translate);
     return temp;
 }
@@ -342,24 +443,28 @@ void Drawface(FaceData face)
         v = face.vertices[j];           //reads 3 vertices
         v = transform(v);               //transforms said vertices
         points[j] = world2screen(v);    //projects to screen
+        v = transformation3D<float>::scale(v, 100.0f);
+        //std::cout << v;
         world[j] = v;                   //real world co-ords
         n[j] = transformation3D<float>::rotate(face.normal[j],rotate);
+       // n[j] = (world[j] - lookAt).normalize();
         intensity[j] = ((n[j] * light_dir));
     }
     surfaceNormal = vec3::cross((world[2] - world[0]), (world[1] - world[0])).normalize();
     switch (rMode)
     {
+    case(vertexGrid):
+        for(int i=0;i<3;i++)
+            putpixel(points[i], fD.mtl.Kd);
+        break;
     case(wireframe):
-        if (surfaceNormal * eye <0)
-        {
             LineBresenham_adjusted(points[0], points[1], fD.mtl.Kd);
             LineBresenham_adjusted(points[0],points[2], fD.mtl.Kd);
             LineBresenham_adjusted(points[2],points[1], fD.mtl.Kd);
-            
-        }break;
+            break;
     case(flat):
     {   if (surfaceNormal * eye < 0)
-        if (vec3(0,0,-1) *surfaceNormal > 0)
+        //if (vec3(0,0,-1) *surfaceNormal > 0)
                 Flatrasterize(points[0], points[1], points[2], fD.mtl.Kd);
     }break;
     case(gauraud):
@@ -436,7 +541,8 @@ void Flatrasterize(vec3 V1, vec3 V2, vec3 V3, const vec3_T<float>& color)
     //divide triangle into two halves
 
     int height = V3.y - V1.y;
-
+    if (height == 0)
+        return;
     for (int y = V1.y; y <= V2.y; y++)
     {
         int partialHeight = V2.y - V1.y + 1; // +1 because both upper and lower limit is included
@@ -569,7 +675,7 @@ void triangle(vec3* world, vec3* pts, vec3* normal, vec3 ka, vec3 kd, vec3 ks, f
 }
 void Rotatelight()
 {
-    std::cout << lightRevolve;
+    //std::cout << lightRevolve;
     if (lightRevolve)
     {
         light_dir.x = 2 * cos(theta  * 3.1415f / 180);

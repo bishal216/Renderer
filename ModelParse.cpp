@@ -23,7 +23,7 @@ ModelParse::ModelParse(std::string filename) : vertices()//, faces()
         //get one line at a time
         std::getline(in, line);
         std::istringstream iss(line.c_str());
-        if (!line.compare(0, 6, "mtllib"))  //starts with v<space>
+        if (!line.compare(0, 6, "mtllib"))  
         {
             iss >> str >> str;
             materialPath = "Object/" + str;
@@ -109,7 +109,7 @@ ModelParse::ModelParse(std::string filename) : vertices()//, faces()
         }
     }
     //std::cout << nverts()<<std::endl;
-    manageFaces(1);
+    //manageFaces();
 }
 
 ModelParse::~ModelParse()
@@ -187,15 +187,19 @@ void ModelParse::checkMaxMin(char mk,float vk)
     }
 }
 
-void ModelParse::manageFaces(float k)
+void ModelParse::manageFaces()
 {
     vec3 range = maxValue - minValue;
     vec3 offSet = range / 2 - maxValue;
     //std::cout << std::endl << range << std::endl << offSet;
-    for (int i = 0; i < nverts(); i++)
+    for (int i = 0; i < FaceDataList.size(); i++)
     {
-        vertices.at(i) += offSet;
-        vertices.at(i) /= (range/2);
-        vertices.at(i) *= k;
+        for (int j = 0; j < 3; j++)
+        {
+            FaceDataList.at(i).vertices[j] += offSet;
+            FaceDataList.at(i).vertices[j] /= (range / 2);
+            FaceDataList.at(i).vertices[j] += 1.f;
+        }
+        
     }
 }

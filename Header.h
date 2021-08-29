@@ -9,10 +9,10 @@
 #include"ModelParse.h"
 #include"Transformations.h"
 
-#define WIDTH 500
-#define HEIGHT 500
+#define WIDTH 800
+#define HEIGHT 800
 #define FPS 60
-
+#define Pi 3.14159
 //functions for drawing
 void initcanvas(int argc, char** argv);		//Initialize GLUT and canvas
 void reshape(int w, int h);					//Resizing of window
@@ -20,6 +20,8 @@ void update(int);							//update
 void display();								//display
 void cleargrid();							//Clears grid
 void myKeyboardFunc(unsigned char key, int x, int y);	//Keyboard 
+void myMouseFunc(int button, int state, int x, int y);	//mouse
+void myPassiveMotionFunc(int x, int y); //motion when not clicked
 
 														//putpixel
 void putpixel(vec3 P, const vec3& col);
@@ -41,7 +43,8 @@ float* zBuffer;
 
 //ModelParse* object = new ModelParse("Object/Stupa4.obj");
 //ModelParse* object = new ModelParse("Object/chopper.obj");
-ModelParse* object = new ModelParse("Object/untitled.obj");
+ModelParse* object = new ModelParse("Object/swyambutemples.obj");
+//ModelParse* object = new ModelParse("Object/untitled.obj");
 
 
 int width = WIDTH;
@@ -49,12 +52,14 @@ int height = HEIGHT;
 int depth = 500;
 bool doPers = true;
 bool lightRevolve = false;
+bool cull = false;
 int theta = 0,stepsize=1;
 //vec3 camera = { 0,0,3 };	
-vec3 light_dir = vec3(1, 0, 0);
-vec3 eye = { 0,0,3 };
-vec3 translate = vec3(0, -1, 0), rotate = vec3(0, 0, 0), scale = vec3(0.05, 0.05, 0.05);
-
+vec3 light_dir = vec3(1000, 0, 0).normalize();
+vec3 eye = { 0,0,800 };
+vec3 translate = vec3(0, 0, 0), rotate = vec3(0, 0, 0), scale = vec3(1, 1, 1);
+vec3 lookAt = { 1.0f *width / 2,1.f*height / 2,0 };
+float rad = (lookAt - eye).getmag();
 //colors
 const vec3_T<float>& WHITE = { 1,1,1 };
 const vec3_T<float>& RED = { 1,0,0 };
@@ -78,8 +83,8 @@ vec3 CoG;					//cross product for centre og gravity
 vec2 bboxmin, bboxmax;		//gets boundry box
 //------------------EXPERIMENTAL------------------------
 void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color, float* intensity);
-enum rastermode{ wireframe,flat,gauraud,phong};
-rastermode rMode = gauraud;
+enum rastermode{vertexGrid,wireframe,flat,gauraud,phong};
+rastermode rMode = wireframe;
 void Drawface(FaceData face);
 void Rotatelight();
 #endif

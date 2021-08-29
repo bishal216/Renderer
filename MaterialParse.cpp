@@ -51,11 +51,15 @@ MaterialParse::MaterialParse(std::string filename)
         {
             iss >> trash >> trash >> temp.Ks.x >> temp.Ks.y >> temp.Ks.z;      // line is in the form of Kd 0.1 0.2 0.3
         }
+        if (!line.compare(0, 5, "illum"))  //Illumination Model
+        {
+            iss >> trash >> trash >> trash >> trash >> trash >>  temp.illum;      // illumination time
+        }
     }
     MaterialList.push_back(temp);   //pushes last Material
     std::cout<<nMaterials();
     for (int i = 0; i < nMaterials(); i++)
-        PrintMaterialList(i);
+       PrintMaterialList(i);
 }
 
 MaterialParse::~MaterialParse()
@@ -84,5 +88,6 @@ void MaterialParse::PrintMaterialList(int i)
     std::cout << "Diffuse: " << MaterialList.at(i).Kd ;
     std::cout << "Specular: " << MaterialList.at(i).Ks ;
     std::cout << "Alpha: " << MaterialList.at(i).Ns << std::endl;
+    std::cout << "Illum: " << MaterialList.at(i).illum << std::endl;
     std::cout << std::endl;
 }

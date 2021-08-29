@@ -17,7 +17,7 @@ struct MaterialData {
 	//vec3 Ke;	//Transmission Filter 
 	//vec3 Ni;	//Refraction coefficient
 	// float d;//opacity, represented by d in mtl, we don't work with transparency
-	// int illum;	//type of illumination
+	int illum = 0;	//type of illumination
 };
 class MaterialParse
 {

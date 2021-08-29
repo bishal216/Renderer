@@ -22,11 +22,9 @@ private:
 	std::string materialPath;
 
 	std::vector<vec3> vertices;				//vertex array
-	//std::vector<std::vector<vec3i>> faces;	//face array
-	//std::vector<int> MaterialNumberList;		//Materials Number Array
 	std::vector<vec3> normal;	//normal co-ordinates array for Gouraud Shading
-	
 	std::vector<FaceData> FaceDataList;
+
 	//for maintaining 
 	vec3 maxValue = { INT_MIN,INT_MIN,INT_MIN }, minValue = { INT_MAX,INT_MAX,INT_MAX };
 
@@ -47,7 +45,7 @@ public:
 
 
 	void checkMaxMin(char mk,float vk);		//compares given value with maxk or mink with valuek
-	void manageFaces(float k);				//normalizes the value between -k and k
+	void manageFaces();						// view volume= betn -1 to 1=
 
 };
 
