@@ -43,13 +43,14 @@ float* zBuffer;
 
 //ModelParse* object = new ModelParse("Object/Stupa4.obj");
 //ModelParse* object = new ModelParse("Object/chopper.obj");
-ModelParse* object = new ModelParse("Object/swyambutemples.obj");
+//ModelParse* object = new ModelParse("Object/swyambutemples.obj");
 //ModelParse* object = new ModelParse("Object/untitled.obj");
+ModelParse* object = new ModelParse("Object/finalObj2.obj");
 
 
 int width = WIDTH;
 int height = HEIGHT;
-int depth = 500;
+int depth = 1500;
 bool doPers = true;
 bool lightRevolve = false;
 bool cull = false;

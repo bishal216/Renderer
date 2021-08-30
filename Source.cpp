@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 
 }
 
-void initcanvas(int argc, char** argv)
+void initcanvas(int argc, char** argv)  
 {
     //Initialize GLUT
     glutInit(&argc, argv);
@@ -209,6 +209,10 @@ void myKeyboardFunc(unsigned char key, int x, int y)
     case '<': light_dir.z+=0.2; break;
     case '>': light_dir.z-=0.2; break;
     
+    case ',': light_dir.y -= 0.2; break;
+    case '.': light_dir.y -= 0.2; break;
+
+
     //raster
     case '0': rMode = vertexGrid; break;
     case '1': rMode = wireframe; break;
@@ -428,7 +432,7 @@ void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color, float* inte
             clr = color * (bc_screen.x) * intensity[0] + color * (bc_screen.y) * intensity[1] + color * (bc_screen.z) * intensity[2];
             //std::cout << clr << std::endl;
             // clr /= 3;
-            P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 1;
+            P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 100;
             putpixel(P, clr);
 
         }
@@ -443,7 +447,7 @@ void Drawface(FaceData face)
         v = face.vertices[j];           //reads 3 vertices
         v = transform(v);               //transforms said vertices
         points[j] = world2screen(v);    //projects to screen
-        v = transformation3D<float>::scale(v, 100.0f);
+        //v = transformation3D<float>::scale(v, 100.0f);
         //std::cout << v;
         world[j] = v;                   //real world co-ords
         n[j] = transformation3D<float>::rotate(face.normal[j],rotate);
@@ -614,7 +618,7 @@ void triangle(vec3* pts,float* intensity,vec3 ka,vec3 kd)
             float it = (bc_screen.x) * intensity[0] + (bc_screen.y) * intensity[1] + (bc_screen.z) * intensity[2];
             clr = kd + kd * it;
             clr /= 2;
-            P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 1;
+            P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 100;
             putpixel(P, clr);
         }
     }
@@ -650,22 +654,23 @@ void triangle(vec3* world, vec3* pts, vec3* normal, vec3 ka, vec3 kd, vec3 ks, f
         {
             vec3 bc_screen = barycentric(pts[0], pts[1], pts[2], P);
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
-            P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 1;
+            P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 100;
             float ia = 1;
 
             vec3 n = normal[0] * (bc_screen.x) + normal[1] * (bc_screen.y) + normal[2] * (bc_screen.z);
+            n.normalize();
 
-            float id = n * (world2screen(light_dir) - P).normalize();
-            id = clamp(id);
-            vec3 ref = -(world2screen(light_dir) - P).normalize() + n * (2.0f * id);
+            float id = (n * vec3_T<float>::normalize(light_dir));
+            id = clamp(id); 
+            //vec3 ref = -(world2screen(light_dir) - P).normalize() + n * (2.0f * id);
+            vec3 ref =  n * (2.0f * id) - light_dir;
             //alpha = 0.2;
             //alpha = 6000;
             //vec3 halfwayDir = vec3::normalize((world2screen(light_dir) - P).normalize() + eye);
             //float is = pow(clamp(n * halfwayDir), alpha);
             //vec3 tempvec = eye;
             float is = pow(ref * eye, alpha);
-            //is = clamp(is);
-            is = higher(is, 0.f);
+            is = clamp(is);
             clr = (kd * ia) + ((kd * id)) + (ks * is);
             clr /= 3;
             clr = { clamp(clr.x),clamp(clr.y),clamp(clr.z) };

@@ -57,9 +57,9 @@ MaterialParse::MaterialParse(std::string filename)
         }
     }
     MaterialList.push_back(temp);   //pushes last Material
-    std::cout<<nMaterials();
-    for (int i = 0; i < nMaterials(); i++)
-       PrintMaterialList(i);
+    //std::cout<<nMaterials();
+   // for (int i = 0; i < nMaterials(); i++)
+    //   PrintMaterialList(i);
 }
 
 MaterialParse::~MaterialParse()
