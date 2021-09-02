@@ -1,28 +1,52 @@
-Controls:
-//toggles
-p: perspective
-l: light rotate
-//Translation
-w-s : z translation
-a-d: x translation
-q-e : y translation
+# 3D Rendering of Swyambhunatn
 
-//Scaling
-z: Up
-x:Down
+This is a 3d renderer made for graphics project. 
 
-//Rotation
-i-o : x-axis
-j-k : y-axis
-n-m : z-axis
+## Installation
 
-//reset transformations: 'r'
+For installation perform following steps
+```bash
+1. Install visual studio or any other prefered IDE(we have used visual studio)
+2. Setup Glut 
+3. Copy object files 
+4. Build and run the project in debug mode
+```
 
-//Light
-< > : z-axis translation of light 
+## Usage
+### controls:
+### Toggle Controls:
+   - p: perspective
+   -  l: light rotate
+### Translations
+- w-s : z translation
+- a-d: x translation
+- q-e : y translation
 
-//raster mode
-1 : Wireframe
-2 : Flat
-3 : Gauraud
-4 : Phong
+### Scaling
+- z: Up x:Down
+
+### Rotation
+- i-o : x-axis
+- j-k : y-axis
+- n-m : z-axis
+
+### Reset Transformations
+- r : reset
+### Light
+- < > : z-axis translation of light
+
+# Raster Mode
+- 1 : Wireframe
+- 2 : Flat
+- 3 : Gauraud
+- 4 : Phong
+
+   
+
+
+
+## Contributing
+Pull requests for the projects are currently unavailable
+
+
+
