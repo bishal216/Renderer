@@ -108,7 +108,7 @@ ModelParse::ModelParse(std::string filename) : vertices()//, faces()
             normal.push_back(n);
         }
     }
-    std::cout << nfaceData()<<std::endl;
+    //std::cout << nfaceData()<<std::endl;
     //manageFaces();
 }
 

@@ -41,11 +41,7 @@ vec3* color;
 float* zBuffer;
 
 
-//ModelParse* object = new ModelParse("Object/Stupa4.obj");
-//ModelParse* object = new ModelParse("Object/chopper.obj");
-//ModelParse* object = new ModelParse("Object/swyambutemples.obj");
-//ModelParse* object = new ModelParse("Object/untitled.obj");
-ModelParse* object = new ModelParse("Object/finalObj2.obj");
+ModelParse* object = new ModelParse("Object/FinalObject.obj");
 
 
 int width = WIDTH;
@@ -56,9 +52,9 @@ bool lightRevolve = false;
 bool cull = false;
 int theta = 0,stepsize=1;
 //vec3 camera = { 0,0,3 };	
-vec3 light_dir = vec3(1000, 0, 0).normalize();
+vec3 light_dir = vec3(0, 0, 1).normalize();
 vec3 eye = { 0,0,800 };
-vec3 translate = vec3(0, 0, 0), rotate = vec3(0, 0, 0), scale = vec3(1, 1, 1);
+vec3 translate = vec3(0, 0, 0), rotate = vec3(0, 0, 0), scale = vec3(0.2, 0.2, 0.2);
 vec3 lookAt = { 1.0f *width / 2,1.f*height / 2,0 };
 float rad = (lookAt - eye).getmag();
 //colors
@@ -85,7 +81,14 @@ vec2 bboxmin, bboxmax;		//gets boundry box
 //------------------EXPERIMENTAL------------------------
 void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color, float* intensity);
 enum rastermode{vertexGrid,wireframe,flat,gauraud,phong};
-rastermode rMode = wireframe;
+rastermode rMode = gauraud;
 void Drawface(FaceData face);
 void Rotatelight();
+
+
+bool night = false;
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #endif

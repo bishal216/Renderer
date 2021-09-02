@@ -97,7 +97,6 @@ void update(int value) {
     //const vec3_T<float>& clr = { (float)(rand() % 255) / 255 ,(float)(rand() % 255) / 255 ,(float)(rand() % 255) / 255 };
     //light_dir.normalize();
     Rotatelight();
-    // std::cout << light_dir;
 
     cleargrid();
     for (int i = 0; i < fDList.size(); i++)
@@ -105,6 +104,8 @@ void update(int value) {
         fD = fDList.at(i);
         Drawface(fD);
     }
+    //std::cout << eye<<lookAt;
+    std::cout << light_dir;
     /*
     for (int i = 0; i < faceList.size(); i++)
     {
@@ -203,14 +204,17 @@ void myKeyboardFunc(unsigned char key, int x, int y)
     case 'e': translate.y+=0.01; break;
 
     //reset
-    case 'r': translate = 0; rotate = 0; scale = 1; lookAt = 0; glutWarpPointer(width / 2, height / 2);eye = { 0,0,800 }; break;
+    case 'r': translate = 0; rotate = 0; scale = 0.2; lookAt = 0; glutWarpPointer(width / 2, height / 2);eye = { 0,0,800 }; break;
 
     //light
     case '<': light_dir.z+=0.2; break;
     case '>': light_dir.z-=0.2; break;
     
-    case ',': light_dir.y -= 0.2; break;
+    case ',': light_dir.y += 0.2; break;
     case '.': light_dir.y -= 0.2; break;
+
+    case 'f': light_dir.x += 0.2; break;
+    case 'c': light_dir.x -= 0.2; break;
 
 
     //raster
@@ -229,8 +233,10 @@ void myKeyboardFunc(unsigned char key, int x, int y)
     case'b':eye.z-=10;break;
     
     //toggles:
-    case 'p': doPers = !doPers; break;
+    case 'p': night = !night; break;    //toggle night
     case 'l': lightRevolve = !lightRevolve; break;
+
+
     case 27: exit(1);
     }
 }
@@ -241,12 +247,13 @@ void myMouseFunc(int button, int state, int x, int y)
 void myPassiveMotionFunc(int x, int y) {
     //lookAt = { 1.f * x,1.f * y, (float)( sqrt( pow(rad,2) - ( pow(x- eye.x,2) + pow(y - eye.y,2) ) ) - eye.z) };
     lookAt = {1.f * x-width/2.f,(-1.f * y+height/2.f), eye.z - 400};
-    if (lookAt.y > 0)
-        lookAt.y = 0;
-    std::cout << lookAt;
+    //if (lookAt.y > 0)
+    //    lookAt.y = 0;
+    //std::cout << lookAt;
 }
 void putpixel(vec3 P, const vec3& col) {
     width = (int)width, height = (int)height;
+
     if (P.x < width && P.x >= 0 && P.y < height && P.y >= 0) 
     {
         if (zBuffer[(int)(P.x + P.y * width)] <= P.z)
@@ -323,7 +330,7 @@ vec3 world2screen(vec3 v) {
     
     z = (eye - lookAt).normalize();
     x = vec3::cross(up, z).normalize();
-    y = vec3::cross(z, x).normalize();
+    y = vec3::cross(z, x).normalize(); //up is not necessarily y
  
     tempx = x.x * v.x + x.y * v.y + x.z * v.z;// +lookAt.x / width;
     tempy = y.x * v.x + y.y * v.y + y.z * v.z;// +lookAt.y / height;
@@ -343,17 +350,32 @@ vec3 world2screen(vec3 v) {
 
     if (doPers)
     {
+        /*
         float r = -1 / eye.z;
         tempx = (float)((int)(temp.x / (1 + r * temp.z) + 0.5));
         tempy = (float)((int)(temp.y / (1 + r * temp.z) + 0.5));
         tempz = temp.z / (1 + r * temp.z);
+        */
+        float fNear = 0.1f;
+        float fFar = 1000.0f;
+        float fFov = 90.0f;
+        //float fAspectRatio = (float)height / (float)width;
+        float fAspectRatio = (float)width / (float)height;
+        float fFovRad = 1.0f / tanf(fFov * 0.5f / 180.0f * 3.14159f);
+        mat4 matProj;
+        matProj(0, 0) = fAspectRatio * fFovRad;
+        matProj(1, 1) = fFovRad;
+        matProj(2, 2) = fFar / (fFar - fNear);
+        matProj(3, 2) = (-fFar * fNear) / (fFar - fNear);
+        matProj(2, 3) = 1.0f;
+        matProj(3, 3) = 0.0f;
+
+        temp = matProj * temp;
     }
-    temp = { tempx,tempy,tempz };
+    //temp = { tempx,tempy,tempz };
 
     return temp;
     /*
-   // return ViewMatrix()*ModalMatrix({0, 1, 0})* v;
-    // Projection Matrix
     float fNear = 0.1f;
     float fFar = 1000.0f;
     float fFov = 90.0f;
@@ -438,7 +460,7 @@ void triangle(vec3* pts, float* zbuffer, const vec3_T<float>& color, float* inte
         }
     }
 }
-
+float surfaceIntensity;
 void Drawface(FaceData face)
 {
     for (int j = 0; j < 3; j++)
@@ -455,6 +477,7 @@ void Drawface(FaceData face)
         intensity[j] = ((n[j] * light_dir));
     }
     surfaceNormal = vec3::cross((world[2] - world[0]), (world[1] - world[0])).normalize();
+    surfaceIntensity = clamp(surfaceNormal * light_dir);
     switch (rMode)
     {
     case(vertexGrid):
@@ -466,13 +489,17 @@ void Drawface(FaceData face)
             LineBresenham_adjusted(points[0],points[2], fD.mtl.Kd);
             LineBresenham_adjusted(points[2],points[1], fD.mtl.Kd);
             break;
-    case(flat):
-    {   if (surfaceNormal * eye < 0)
-        //if (vec3(0,0,-1) *surfaceNormal > 0)
-                Flatrasterize(points[0], points[1], points[2], fD.mtl.Kd);
+   
+   case(flat):
+    {   //if (surfaceNormal * eye < 0)
+       if (vec3(0, 0, -1) * surfaceNormal < 0)
+                Flatrasterize(points[0], points[1], points[2], fD.mtl.Kd * surfaceIntensity);
     }break;
+    
+
     case(gauraud):
     {
+        
         triangle(points, intensity, face.mtl.Ka, face.mtl.Kd);
     }break;
     case(phong):
@@ -616,7 +643,10 @@ void triangle(vec3* pts,float* intensity,vec3 ka,vec3 kd)
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
 
             float it = (bc_screen.x) * intensity[0] + (bc_screen.y) * intensity[1] + (bc_screen.z) * intensity[2];
-            clr = kd + kd * it;
+            float ia;
+            if (night)   ia = 0;
+            else ia = 1;
+            clr =  kd * ia + kd * it;
             clr /= 2;
             P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 100;
             putpixel(P, clr);
@@ -646,7 +676,7 @@ void triangle(vec3* world, vec3* pts, vec3* normal, vec3 ka, vec3 kd, vec3 ks, f
         bboxmin.y = std::max(bboxmin.y, 0.f);
 
     }
-    vec3 P;
+    vec3 P,Q;
     vec3 clr;
     for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++)
     {
@@ -655,26 +685,40 @@ void triangle(vec3* world, vec3* pts, vec3* normal, vec3 ka, vec3 kd, vec3 ks, f
             vec3 bc_screen = barycentric(pts[0], pts[1], pts[2], P);
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
             P.z = pts[0].z * bc_screen.x + pts[1].z * bc_screen.y + pts[2].z * bc_screen.z + 100;
+           
             float ia = 1;
-
             vec3 n = normal[0] * (bc_screen.x) + normal[1] * (bc_screen.y) + normal[2] * (bc_screen.z);
             n.normalize();
-
-            float id = (n * vec3_T<float>::normalize(light_dir));
-            id = clamp(id); 
+            vec3 worldPoint = world[0] * (bc_screen.x) + world[1] * (bc_screen.y) + world[2] * (bc_screen.z);
+            worldPoint.normalize();
+            float id = (n * (light_dir - worldPoint));
+            //std::cout << light_dir << worldPoint << std::endl;
+            id = higher(0.f,id); 
             //vec3 ref = -(world2screen(light_dir) - P).normalize() + n * (2.0f * id);
-            vec3 ref =  n * (2.0f * id) - light_dir;
+            vec3 ref =  n * (2.0f * id) - (light_dir - worldPoint);
             //alpha = 0.2;
             //alpha = 6000;
             //vec3 halfwayDir = vec3::normalize((world2screen(light_dir) - P).normalize() + eye);
+            //vec3 halfwayDir = vec3::normalize((light_dir - vec3::normalize(P)).normalize() + eye);
             //float is = pow(clamp(n * halfwayDir), alpha);
             //vec3 tempvec = eye;
-            float is = pow(ref * eye, alpha);
+            float is = pow(higher(0.f,ref * (eye-lookAt)), alpha);
             is = clamp(is);
-            clr = (kd * ia) + ((kd * id)) + (ks * is);
-            clr /= 3;
-            clr = { clamp(clr.x),clamp(clr.y),clamp(clr.z) };
-            putpixel(P, clr);
+
+            if (night)   ia = 0;
+            else ia = 1;
+
+                clr = (kd * ia) + ((kd * id)) + (kd * is);
+                clr /= 3;
+                clr = { clamp(clr.x),clamp(clr.y),clamp(clr.z) };
+                putpixel(P, clr);
+
+            //ia = 0;
+            //id = 0;
+            //is = 0;
+           
+           
+            
         }
     }
 }

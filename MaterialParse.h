@@ -7,7 +7,7 @@
 #include<strstream>
 
 struct MaterialData {
-	int MaterialNumber =0;	//newmtl Material.001
+	int MaterialNumber = 0;	//newmtl Material.001
 	float Ns = 0;	//shininess (alpha)
 	vec3 Ka = 0;	//ambient colour
 	vec3 Kd = 0;	//diffuse colour
