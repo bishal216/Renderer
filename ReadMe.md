@@ -15,7 +15,7 @@ For installation perform following steps
 ## Usage
 ### controls:
 ### Toggle Controls:
-   - p: perspective
+   - p: night mode
    -  l: light rotate
 ### Translations
 - w-s : z translation
@@ -34,8 +34,10 @@ For installation perform following steps
 - r : reset
 ### Light
 - < > : z-axis translation of light
-
+- , . : y-axis translation of light
+- f c : x-axis translation of light
 # Raster Mode
+- 0 : Node/ Grid
 - 1 : Wireframe
 - 2 : Flat
 - 3 : Gauraud
