@@ -1,4 +1,4 @@
-# 3D Rendering of Swyambhunatn
+# 3D Rendering of Swoyambhunath
 
 This is a 3d renderer made for graphics project. 
 
