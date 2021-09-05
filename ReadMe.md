@@ -7,7 +7,7 @@ This is a 3d renderer made for graphics project.
 For installation perform following steps
 ```bash
 1. Install visual studio or any other prefered IDE(we have used visual studio)
-2. Setup Glut 
+2. Setup Glut (free glut for windows)
 3. Copy object files 
 4. Build and run the project in debug mode
 ```
